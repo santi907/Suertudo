@@ -1,4 +1,3 @@
-```javascript
 import { LIGAS, TEAM_STRENGTH_DB, HOME_ADVANTAGE, CORNER_HOME_BIAS } from './config/leagues.js';
 import * as stats from './js/models/stats.js';
 import { fetchLeagueDynamicData } from './api.js';
@@ -83,6 +82,4 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam) {
     cornerProbs
   };
 }
-```
 
----
