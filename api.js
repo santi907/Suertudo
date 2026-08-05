@@ -1,4 +1,3 @@
-```javascript
 const BASE_URL = 'https://sports.bzzoiro.com/api/v2';
 
 function getToken() {
@@ -65,6 +64,3 @@ export async function fetchLeagueDynamicData(leagueId) {
   // Obtener promedio de córneres (si está disponible en algún otro endpoint; por ahora usamos el estático como fallback)
   return { goalsAvg, cornAvg: null, teamRatings };
 }
-```
-
----
