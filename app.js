@@ -1,4 +1,3 @@
-``javascript
 import { LIGAS, TEAM_STRENGTH_DB } from './config/leagues.js';
 import { simulateMatch } from './model.js';
 
@@ -135,6 +134,3 @@ if (Object.keys(LIGAS).length > 0) {
   const firstLeague = Object.keys(LIGAS)[0];
   populateTeams(firstLeague);
 }
-```
-
----
