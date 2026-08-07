@@ -1,5 +1,5 @@
 import { LIGAS } from './config/leagues.js';
-import { simulateMatch, getTeamsForLeague } from './model.js';
+import { simulateMatch, getTeamsForLeague } from './models.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const apiKeyInput = document.getElementById('api-key');
