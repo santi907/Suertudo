@@ -686,7 +686,8 @@ export const TEAM_STRENGTH_DB = {
   "Jaguares de Córdoba": { atk: 0.80, def: 0.92 },
   "Cúcuta Deportivo": { atk: 0.86, def: 0.98 },
   "Boyacá Chicó FC": { atk: 0.78, def: 1.02 },
-  "Deportivo Pereira": { atk: 1.00, def: 0.96 }
+  "Deportivo Pereira": { atk: 1.00, def: 0.96 } 
+  }
 };
 
 export const HOME_ADVANTAGE = {
