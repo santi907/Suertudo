@@ -385,7 +385,7 @@ export const TEAM_STRENGTH_DB = {
     "San Antonio FC": { "atk": 1.10, "def": 0.97 },
     "SC Jacksonville": { "atk": 0.80, "def": 1.18 }
   },
-  "LPB": {
+  "PPT": {
     "Académico Viseu FC": { "atk": 0.86, "def": 1.12 },
     "Benfica": { "atk": 1.28, "def": 0.88 },
     "Casa Pia": { "atk": 0.82, "def": 1.14 },
