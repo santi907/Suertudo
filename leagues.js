@@ -667,27 +667,26 @@ export const TEAM_STRENGTH_DB = {
     "Servette FC": { "atk": 1.12, "def": 0.95 }
   },
   "CPA": {
-    "Atlético Nacional": { "atk": 1.18, "def": 0.90 },
-    "Millonarios": { "atk": 1.15, "def": 0.92 },
-    "América de Cali": { "atk": 1.12, "def": 0.94 },
-    "Junior": { "atk": 1.10, "def": 0.95 },
-    "Independiente Medellín": { "atk": 1.08, "def": 0.97 },
-    "Deportivo Cali": { "atk": 1.05, "def": 0.99 },
-    "Santa Fe": { "atk": 1.02, "def": 1.01 },
-    "Once Caldas": { "atk": 1.00, "def": 1.03 },
-    "Deportes Tolima": { "atk": 0.98, "def": 1.04 },
-    "Atlético Bucaramanga": { "atk": 0.96, "def": 1.06 },
-    "La Equidad": { "atk": 0.94, "def": 1.07 },
-    "Envigado": { "atk": 0.92, "def": 1.09 },
-    "Jaguares de Córdoba": { "atk": 0.90, "def": 1.11 },
-    "Boyacá Chicó": { "atk": 0.88, "def": 1.13 },
-    "Deportivo Pasto": { "atk": 0.86, "def": 1.15 },
-    "Atlético Huila": { "atk": 0.84, "def": 1.17 },
-    "Patriotas Boyacá": { "atk": 0.82, "def": 1.18 },
-    "Águilas Doradas": { "atk": 0.80, "def": 1.20 },
-    "Unión Magdalena": { "atk": 0.78, "def": 1.22 },
-    "Fortaleza CEIF": { "atk": 0.76, "def": 1.24 }
-  }
+    "Atlético Nacional": { atk: 1.30, def: 1.28 },
+  "América de Cali": { atk: 0.98, def: 1.08 },
+  "Once Caldas": { atk: 1.08, def: 1.18 },
+  "Deportes Tolima": { atk: 1.02, def: 1.12 },
+  "Independiente Medellín": { atk: 1.00, def: 1.10 },
+  "Junior Barranquilla": { atk: 1.16, def: 1.04 },
+  "Deportivo Pasto": { atk: 0.96, def: 1.06 },
+  "Millonarios": { atk: 1.08, def: 1.08 },
+  "Rionegro Águilas Doradas": { atk: 0.88, def: 0.98 },
+  "Internacional de Bogotá": { atk: 0.78, def: 0.90 },
+  "Independiente Santa Fe": { atk: 1.12, def: 1.16 },
+  "Deportivo Cali": { atk: 0.88, def: 1.00 },
+  "Llaneros FC": { atk: 0.82, def: 0.94 },
+  "Atlético Bucaramanga": { atk: 0.96, def: 1.10 },
+  "Fortaleza FC": { atk: 0.76, def: 1.24 },
+  "Alianza Valledupar FC": { atk: 0.82, def: 0.94 },
+  "Jaguares de Córdoba": { atk: 0.80, def: 0.92 },
+  "Cúcuta Deportivo": { atk: 0.86, def: 0.98 },
+  "Boyacá Chicó FC": { atk: 0.78, def: 1.02 },
+  "Deportivo Pereira": { atk: 1.00, def: 0.96 }
 };
 
 export const HOME_ADVANTAGE = {
