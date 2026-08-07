@@ -1,0 +1,102 @@
+:root {
+  --bg: #121212;
+  --surface: #1e1e1e;
+  --text: #e0e0e0;
+  --accent: #bb86fc;
+  --green: #4caf50;
+  --yellow: #ffc107;
+  --red: #f44336;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  max-width: 600px;
+  width: 100%;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  color: var(--accent);
+}
+
+#api-key-section {
+  background: var(--surface);
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+#api-key-section label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+#api-key {
+  width: 70%;
+  padding: 8px;
+  border: none;
+  border-radius: 5px;
+  background: #2c2c2c;
+  color: var(--text);
+}
+
+.selector-section {
+  background: var(--surface);
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: center;
+}
+
+.selector-section label {
+  min-width: 60px;
+}
+
+.selector-section select {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 5px;
+  background: #2c2c2c;
+  color: var(--text);
+}
+
+button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background: var(--accent);
+  color: #121212;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.results {
+  margin-top: 20px;
+  background: var(--surface);
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.card {
+  background: #2c2c2c;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.prob {
+  font-size: 1.2em;
+  font-weight: bold;
+}
