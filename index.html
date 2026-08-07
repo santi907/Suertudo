@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Apuestas</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🧮 Simulador de Apuestas</h1>
+    
+    <div id="api-key-section">
+      <label for="api-key">API Key de Bzzoiro:</label>
+      <input type="password" id="api-key" placeholder="Ingresa tu token">
+      <button id="save-api-key">Guardar</button>
+      <span id="api-status"></span>
+    </div>
+
+    <div class="selector-section">
+      <label for="league-select">Liga:</label>
+      <select id="league-select"></select>
+      
+      <label for="home-team-select">Local:</label>
+      <select id="home-team-select"></select>
+      
+      <label for="away-team-select">Visitante:</label>
+      <select id="away-team-select"></select>
+      
+      <button id="simulate-btn">Simular</button>
+    </div>
+
+    <div id="results" class="results" style="display:none;">
+      <h2>Predicciones</h2>
+      <div id="predictions-content"></div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
