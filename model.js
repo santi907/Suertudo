@@ -1,13 +1,11 @@
 import { LIGAS, TEAM_STRENGTH_DB, HOME_ADVANTAGE, CORNER_HOME_BIAS } from './config/leagues.js';
-import * as stats from '.js/models/stats.js';
+import * as stats from './js/models/stats.js';
 import { fetchLeagueDynamicData } from './api.js';
 
-// Cache para datos dinámicos por liga
 const dynamicCache = {};
 
 async function getDynamicData(leagueKey) {
   if (dynamicCache[leagueKey]) return dynamicCache[leagueKey];
-  
   try {
     const data = await fetchLeagueDynamicData(leagueKey);
     dynamicCache[leagueKey] = data;
@@ -18,40 +16,46 @@ async function getDynamicData(leagueKey) {
   }
 }
 
+// Fusiona equipos de sub-ligas si la liga es "compuesta" (ej. Copa del Rey = PD + SD2)
+export function getTeamsForLeague(leagueKey) {
+  const liga = LIGAS[leagueKey];
+  if (liga?.compositeOf) {
+    return liga.compositeOf.reduce(
+      (acc, subKey) => ({ ...acc, ...(TEAM_STRENGTH_DB[subKey] || {}) }),
+      {}
+    );
+  }
+  return TEAM_STRENGTH_DB[leagueKey] || {};
+}
+
 function getTeamRating(leagueKey, teamName, dynamicRatings) {
-  // Primero busca en dinámico
   if (dynamicRatings?.[teamName]) return dynamicRatings[teamName];
-  // Luego estático
-  return TEAM_STRENGTH_DB[leagueKey]?.[teamName] || { atk: 1.0, def: 1.0 };
+  return getTeamsForLeague(leagueKey)[teamName] || { atk: 1.0, def: 1.0 };
 }
 
 export async function simulateMatch(leagueKey, homeTeam, awayTeam) {
   const liga = LIGAS[leagueKey];
   if (!liga) throw new Error('Liga no encontrada');
-  
+
   const dynamic = await getDynamicData(leagueKey);
   const goalsAvg = dynamic?.goalsAvg ?? liga.goalsAvg;
   const cornAvg = dynamic?.cornAvg ?? liga.cornAvg;
-  
+
   const hRating = getTeamRating(leagueKey, homeTeam, dynamic?.teamRatings);
   const aRating = getTeamRating(leagueKey, awayTeam, dynamic?.teamRatings);
-  
+
   const homeAdv = HOME_ADVANTAGE[leagueKey] || 1.0;
   const lambdaHome = goalsAvg * hRating.atk * aRating.def * homeAdv;
   const lambdaAway = goalsAvg * aRating.atk * hRating.def;
-  
-  // Resultado
+
   const resultProbs = stats.calcResultProbs(lambdaHome, lambdaAway, leagueKey);
-  
-  // Over/Under goles
+
   const over15 = stats.poissonOver(lambdaHome + lambdaAway, 1.5);
   const over25 = stats.poissonOver(lambdaHome + lambdaAway, 2.5);
   const over35 = stats.poissonOver(lambdaHome + lambdaAway, 3.5);
-  
-  // BTTS
+
   const btts = stats.calcBTTS(lambdaHome, lambdaAway, leagueKey);
-  
-  // Córneres (si la liga tiene cornAvg válido)
+
   let cornerProbs = null;
   if (cornAvg && cornAvg > 0) {
     const { home: lCornerHome, away: lCornerAway } = stats.splitCornerLambda(
@@ -65,7 +69,7 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam) {
       over11: stats.negBinOver(totalCorners, 10.5, liga.cornR || 20),
     };
   }
-  
+
   return {
     liga: liga.name,
     homeTeam,
@@ -82,4 +86,3 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam) {
     cornerProbs
   };
 }
-
