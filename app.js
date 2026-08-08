@@ -101,6 +101,30 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function displayResults(data) {
+    const compareRow = (label, own, ml, blended, suffix = '%') => `
+      <div class="compare-row">
+        <span>${label}</span>
+        <span>${fmt(own)}${suffix}</span>
+        <span>${fmt(ml)}${suffix}</span>
+        <span>${fmt(blended)}${suffix}</span>
+      </div>`;
+
+    const comparisonCard = data.bzzoiroML ? `
+      <div class="card">
+        <h3>Tu modelo vs. Bzzoiro ML${data.bzzoiroML.confidence != null ? ` <small>(confianza ${(data.bzzoiroML.confidence * 100).toFixed(0)}%)</small>` : ''}</h3>
+        ${data.blended ? `
+        <div class="compare-row compare-head">
+          <span></span><span>Poisson</span><span>Bzzoiro ML</span><span>Promedio</span>
+        </div>
+        ${compareRow('Local', data.resultProbs.local, data.bzzoiroML.resultProbs.local, data.blended.resultProbs.local)}
+        ${compareRow('Empate', data.resultProbs.empate, data.bzzoiroML.resultProbs.empate, data.blended.resultProbs.empate)}
+        ${compareRow('Visitante', data.resultProbs.visitante, data.bzzoiroML.resultProbs.visitante, data.blended.resultProbs.visitante)}
+        ${compareRow('Over 1.5', data.over15, data.bzzoiroML.over15, data.blended.over15)}
+        ${compareRow('Over 2.5', data.over25, data.bzzoiroML.over25, data.blended.over25)}
+        ${compareRow('BTTS', data.btts, data.bzzoiroML.btts, data.blended.btts)}
+        ` : `<div class="compare-row"><span>Datos ML parciales para este partido — se muestra solo tu modelo.</span></div>`}
+      </div>` : '';
+
     predictionsContent.innerHTML = `
       <div class="card">
         <h3>Resultado 1X2</h3>
@@ -123,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div>Over 10.5: ${fmt(data.cornerProbs.over10)}%</div>
         <div>Over 11.5: ${fmt(data.cornerProbs.over11)}%</div>
       </div>` : ''}
+      ${comparisonCard}
     `;
     resultsDiv.style.display = 'block';
   }
