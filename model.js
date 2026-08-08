@@ -59,9 +59,14 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam) {
   const hRating = getTeamRating(leagueKey, homeTeam, dynamic?.teamRatings);
   const aRating = getTeamRating(leagueKey, awayTeam, dynamic?.teamRatings);
 
+  // goalsAvg guardado en leagues.js es el promedio TOTAL de goles del
+  // partido (ambos equipos combinados) — por eso se reparte /2 entre cada
+  // equipo antes de aplicar su rating de ataque/defensa. Usar goalsAvg
+  // completo para cada equipo duplicaba los goles esperados del partido.
   const homeAdv = HOME_ADVANTAGE[leagueKey] || 1.0;
-  const lambdaHome = goalsAvg * hRating.atk * aRating.def * homeAdv;
-  const lambdaAway = goalsAvg * aRating.atk * hRating.def;
+  const avgPerTeam = goalsAvg / 2;
+  const lambdaHome = avgPerTeam * hRating.atk * aRating.def * homeAdv;
+  const lambdaAway = avgPerTeam * aRating.atk * hRating.def;
 
   const resultProbs = stats.calcResultProbs(lambdaHome, lambdaAway, leagueKey);
 
