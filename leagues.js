@@ -667,26 +667,26 @@ export const TEAM_STRENGTH_DB = {
     "Servette FC": { "atk": 1.12, "def": 0.95 }
   },
   "CPA": {
-    "Atlético Nacional": { atk: 1.30, def: 1.28 },
-  "América de Cali": { atk: 0.98, def: 1.08 },
-  "Once Caldas": { atk: 1.08, def: 1.18 },
-  "Deportes Tolima": { atk: 1.02, def: 1.12 },
-  "Independiente Medellín": { atk: 1.00, def: 1.10 },
-  "Junior Barranquilla": { atk: 1.16, def: 1.04 },
-  "Deportivo Pasto": { atk: 0.96, def: 1.06 },
-  "Millonarios": { atk: 1.08, def: 1.08 },
-  "Rionegro Águilas Doradas": { atk: 0.88, def: 0.98 },
-  "Internacional de Bogotá": { atk: 0.78, def: 0.90 },
-  "Independiente Santa Fe": { atk: 1.12, def: 1.16 },
-  "Deportivo Cali": { atk: 0.88, def: 1.00 },
-  "Llaneros FC": { atk: 0.82, def: 0.94 },
-  "Atlético Bucaramanga": { atk: 0.96, def: 1.10 },
-  "Fortaleza FC": { atk: 0.76, def: 1.24 },
-  "Alianza Valledupar FC": { atk: 0.82, def: 0.94 },
-  "Jaguares de Córdoba": { atk: 0.80, def: 0.92 },
-  "Cúcuta Deportivo": { atk: 0.86, def: 0.98 },
-  "Boyacá Chicó FC": { atk: 0.78, def: 1.02 },
-  "Deportivo Pereira": { atk: 1.00, def: 0.96 } 
+    "Atlético Nacional": { "atk": 1.18, "def": 0.90 },
+    "Millonarios": { "atk": 1.15, "def": 0.92 },
+    "América de Cali": { "atk": 1.12, "def": 0.94 },
+    "Junior": { "atk": 1.10, "def": 0.95 },
+    "Independiente Medellín": { "atk": 1.08, "def": 0.97 },
+    "Deportivo Cali": { "atk": 1.05, "def": 0.99 },
+    "Santa Fe": { "atk": 1.02, "def": 1.01 },
+    "Once Caldas": { "atk": 1.00, "def": 1.03 },
+    "Deportes Tolima": { "atk": 0.98, "def": 1.04 },
+    "Atlético Bucaramanga": { "atk": 0.96, "def": 1.06 },
+    "La Equidad": { "atk": 0.94, "def": 1.07 },
+    "Envigado": { "atk": 0.92, "def": 1.09 },
+    "Jaguares de Córdoba": { "atk": 0.90, "def": 1.11 },
+    "Boyacá Chicó": { "atk": 0.88, "def": 1.13 },
+    "Deportivo Pasto": { "atk": 0.86, "def": 1.15 },
+    "Atlético Huila": { "atk": 0.84, "def": 1.17 },
+    "Patriotas Boyacá": { "atk": 0.82, "def": 1.18 },
+    "Águilas Doradas": { "atk": 0.80, "def": 1.20 },
+    "Unión Magdalena": { "atk": 0.78, "def": 1.22 },
+    "Fortaleza CEIF": { "atk": 0.76, "def": 1.24 }
   }
 };
 
@@ -715,3 +715,31 @@ export const DIXON_COLES_RHO = {
 export const PLATT_PARAMS = { goals15: { A: 0.951, B: -0.038 }, goals25: { A: 0.933, B: -0.055 }, btts: { A: 0.956, B: -0.034 }, corners: { A: 0.970, B: -0.022 }, goals_ht05: { A: 0.960, B: -0.030 }, goals_ht15: { A: 0.938, B: -0.048 }, resultado: { A: 0.918, B: -0.068 } };
 
 export const CORNER_HOME_BIAS = 1.12;
+
+// Bzzoiro identifica las ligas con un id numérico propio, no con estos códigos
+// cortos. Para pedir datos en vivo hay que resolver el id real buscando por
+// país (ver resolveLeagueId en api.js). Las competiciones continentales
+// (Champions, Europa League, Libertadores) no tienen un único país, así que
+// quedan afuera de este mapa: para esas 3, la app siempre usa datos estáticos.
+export const BZZOIRO_COUNTRY = {
+  PL: 'England', ELC: 'England',
+  BL1: 'Germany',
+  SA: 'Italy', SB2: 'Italy', COPPAITALIA: 'Italy',
+  PD: 'Spain', SD2: 'Spain', COPADELREY: 'Spain',
+  FL1: 'France',
+  DED: 'Netherlands',
+  BSA: 'Brazil', BSB: 'Brazil',
+  MXL: 'Mexico',
+  JPL: 'Belgium',
+  MLS: 'United States', USLC: 'United States',
+  PPT: 'Portugal',
+  EKS: 'Poland',
+  SPL: 'Saudi Arabia',
+  SPFL: 'Scotland',
+  VEIK: 'Finland',
+  NPLQLD: 'Australia',
+  ELITE: 'Norway',
+  ALLSV: 'Sweden',
+  SUI1: 'Switzerland',
+  CPA: 'Colombia'
+};
