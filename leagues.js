@@ -686,6 +686,8 @@ export const TEAM_STRENGTH_DB = {
     "Patriotas Boyacá": { "atk": 0.82, "def": 1.18 },
     "Águilas Doradas": { "atk": 0.80, "def": 1.20 },
     "Unión Magdalena": { "atk": 0.78, "def": 1.22 },
+    "Cúcuta deportivo": { "atk": 0.78, "def": 1.05 },
+    "Internacional de Bogotá": { "atk": 0.65, "def": 1.22 },
     "Fortaleza CEIF": { "atk": 0.76, "def": 1.24 }
   }
 };
