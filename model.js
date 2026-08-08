@@ -1,13 +1,13 @@
 import { LIGAS, TEAM_STRENGTH_DB, HOME_ADVANTAGE, CORNER_HOME_BIAS } from './leagues.js';
 import * as stats from './stats.js';
-import { fetchLeagueDynamicData } from './api.js';
+import { fetchLeagueDynamicData, fetchMatchPrediction } from './api.js';
 
 const dynamicCache = {};
 
-async function getDynamicData(leagueKey) {
+async function getDynamicData(leagueKey, leagueDisplayName) {
   if (dynamicCache[leagueKey]) return dynamicCache[leagueKey];
   try {
-    const data = await fetchLeagueDynamicData(leagueKey);
+    const data = await fetchLeagueDynamicData(leagueKey, leagueDisplayName);
     dynamicCache[leagueKey] = data;
     return data;
   } catch (e) {
@@ -33,11 +33,26 @@ function getTeamRating(leagueKey, teamName, dynamicRatings) {
   return getTeamsForLeague(leagueKey)[teamName] || { atk: 1.0, def: 1.0 };
 }
 
+// Promedia nuestro modelo con el de Bzzoiro solo en los mercados que ambos cubren
+function blend(own, ml) {
+  const avg = (a, b) => +(((a + b) / 2)).toFixed(1);
+  return {
+    resultProbs: {
+      local: avg(own.resultProbs.local, ml.resultProbs.local),
+      empate: avg(own.resultProbs.empate, ml.resultProbs.empate),
+      visitante: avg(own.resultProbs.visitante, ml.resultProbs.visitante),
+    },
+    over15: avg(own.over15, ml.over15),
+    over25: avg(own.over25, ml.over25),
+    btts: avg(own.btts, ml.btts),
+  };
+}
+
 export async function simulateMatch(leagueKey, homeTeam, awayTeam) {
   const liga = LIGAS[leagueKey];
   if (!liga) throw new Error('Liga no encontrada');
 
-  const dynamic = await getDynamicData(leagueKey);
+  const dynamic = await getDynamicData(leagueKey, liga.name);
   const goalsAvg = dynamic?.goalsAvg ?? liga.goalsAvg;
   const cornAvg = dynamic?.cornAvg ?? liga.cornAvg;
 
@@ -70,7 +85,7 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam) {
     };
   }
 
-  return {
+  const ownResult = {
     liga: liga.name,
     homeTeam,
     awayTeam,
@@ -84,5 +99,37 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam) {
     over35,
     btts: stats.plattCalibrate(btts, 'btts'),
     cornerProbs
+  };
+
+  // Intento traer la predicción ML de Bzzoiro para el mismo partido, si hay
+  // token y la liga se pudo resolver. Es 100% opcional: si falla o no
+  // encuentra el partido, se devuelve el resultado propio sin cambios.
+  let bzzoiroML = null;
+  if (dynamic?.bzzoiroLeagueId) {
+    const pred = await fetchMatchPrediction(dynamic.bzzoiroLeagueId, homeTeam, awayTeam);
+    if (pred?.markets) {
+      bzzoiroML = {
+        resultProbs: {
+          local: pred.markets.match_result?.prob_home,
+          empate: pred.markets.match_result?.prob_draw,
+          visitante: pred.markets.match_result?.prob_away,
+        },
+        over15: pred.markets.over_under?.prob_over_15,
+        over25: pred.markets.over_under?.prob_over_25,
+        over35: pred.markets.over_under?.prob_over_35,
+        btts: pred.markets.btts?.prob_yes,
+        confidence: pred.model?.confidence ?? null,
+      };
+    }
+  }
+
+  const hasFullML = bzzoiroML
+    && [bzzoiroML.resultProbs.local, bzzoiroML.resultProbs.empate, bzzoiroML.resultProbs.visitante, bzzoiroML.over15, bzzoiroML.over25, bzzoiroML.btts]
+      .every(v => typeof v === 'number');
+
+  return {
+    ...ownResult,
+    bzzoiroML,
+    blended: hasFullML ? blend(ownResult, bzzoiroML) : null
   };
 }
