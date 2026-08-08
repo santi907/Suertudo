@@ -94,12 +94,11 @@ export function normalizeCornersAvg(v) {
 }
 
 export function splitCornerLambda(totalCorners, homeAtk, homeDef, awayAtk, awayDef, homeBias) {
+    const avgPerTeam = totalCorners / 2;
+    // Un equipo fuerza más córners cuanto más ataca él y peor defiende el rival
     const homeFactor = (homeAtk + awayDef) / 2;
     const awayFactor = (awayAtk + homeDef) / 2;
-    const rawHome = homeFactor * homeBias;
-    const rawAway = awayFactor;
-    const homeShare = (rawHome + rawAway) > 0 ? rawHome / (rawHome + rawAway) : 0.5;
-    const home = +(totalCorners * homeShare).toFixed(2);
-    const away = +(totalCorners - home).toFixed(2);
+    const home = +(avgPerTeam * homeFactor * homeBias).toFixed(2);
+    const away = +(avgPerTeam * awayFactor).toFixed(2);
     return { home, away };
 }
