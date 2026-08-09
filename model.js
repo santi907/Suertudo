@@ -83,10 +83,11 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam) {
     );
     const totalCorners = lCornerHome + lCornerAway;
     cornerProbs = {
-      over8: stats.negBinOver(totalCorners, 7.5, liga.cornR || 20),
-      over9: stats.negBinOver(totalCorners, 8.5, liga.cornR || 20),
-      over10: stats.negBinOver(totalCorners, 9.5, liga.cornR || 20),
-      over11: stats.negBinOver(totalCorners, 10.5, liga.cornR || 20),
+      over7: stats.negBinOver(totalCorners, 7.5, liga.cornR || 20),
+      over8: stats.negBinOver(totalCorners, 8.5, liga.cornR || 20),
+      over9: stats.negBinOver(totalCorners, 9.5, liga.cornR || 20),
+      over10: stats.negBinOver(totalCorners, 10.5, liga.cornR || 20),
+      over11: stats.negBinOver(totalCorners, 11.5, liga.cornR || 20),
     };
   }
 
