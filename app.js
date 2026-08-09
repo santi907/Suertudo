@@ -142,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ${data.cornerProbs ? `
       <div class="card">
         <h3>Córneres</h3>
+        <div>Over 7.5: ${fmt(data.cornerProbs.over7)}%</div>
         <div>Over 8.5: ${fmt(data.cornerProbs.over8)}%</div>
         <div>Over 9.5: ${fmt(data.cornerProbs.over9)}%</div>
         <div>Over 10.5: ${fmt(data.cornerProbs.over10)}%</div>
