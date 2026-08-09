@@ -27,15 +27,15 @@ export const LIGAS = {
   "SPL": { "name": "🇸🇦 Saudi Pro League", "goalsAvg": 2.90, "cornAvg": 9.6, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": false } },
   "SPFL": { "name": "🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Premiership", "goalsAvg": 2.75, "cornAvg": 10.2, "cornR": 19, "markets": { "goles": true, "btts": true, "corn": false } },
   "COPPAITALIA": { "name": "🏆 Coppa Italia", "goalsAvg": 2.50, "cornAvg": 9.4, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": true }, "compositeOf": ["SA", "SB2"] },
-  "VEIK": { "name": "🇫🇮 Veikkausliiga", "goalsAvg": 2.80, "cornAvg": 9.5, "cornR": 16, "markets": { "goles": false, "btts": true, "corn": false } },
+  "VEIK": { "name": "🇫🇮 Veikkausliiga (Finlandia)", "goalsAvg": 2.80, "cornAvg": 9.5, "cornR": 16, "markets": { "goles": false, "btts": true, "corn": false } },
   "UCL": { "name": "⭐ Champions League", "goalsAvg": 2.75, "cornAvg": 10.0, "cornR": 18, "markets": { "goles": false, "btts": true, "corn": true } },
   "UEL": { "name": "🟠 Europa League", "goalsAvg": 2.65, "cornAvg": 9.7, "cornR": 17, "markets": { "goles": false, "btts": true, "corn": false } },
   "SB2": { "name": "🇮🇹 Serie B", "goalsAvg": 2.40, "cornAvg": 9.2, "cornR": 16, "markets": { "goles": true, "btts": true, "corn": true } },
   "COPADELREY": { "name": "🏆 Copa del Rey", "goalsAvg": 2.60, "cornAvg": 9.6, "cornR": 18, "markets": { "goles": true, "btts": true, "corn": true }, "compositeOf": ["PD", "SD2"] },
   "SD2": { "name": "🇪🇸 Segunda División", "goalsAvg": 2.45, "cornAvg": 9.4, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": true } },
   "NPLQLD": { "name": "🇦🇺 NPL Queensland", "goalsAvg": 2.95, "cornAvg": 9.3, "cornR": 16, "markets": { "goles": true, "btts": true, "corn": false } },
-  "ELITE": { "name": "🇳🇴 Eliteserien", "goalsAvg": 2.94, "cornAvg": 9.6, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": false } },
-  "ALLSV": { "name": "🇸🇪 Allsvenskan", "goalsAvg": 2.83, "cornAvg": 9.4, "cornR": 16, "markets": { "goles": false, "btts": true, "corn": false } },
+  "ELITE": { "name": "🇳🇴 Eliteserien (Noruega)", "goalsAvg": 2.94, "cornAvg": 9.6, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": false } },
+  "ALLSV": { "name": "🇸🇪 Allsvenskan (Suecia)", "goalsAvg": 2.83, "cornAvg": 9.4, "cornR": 16, "markets": { "goles": false, "btts": true, "corn": false } },
   "SUI1": { "name": "🇨🇭 Super League (Suiza)", "goalsAvg": 3.34, "cornAvg": 10.0, "cornR": 18, "markets": { "goles": true, "btts": true, "corn": true } },
   "CPA": { "name": "🇨🇴 Categoría Primera A", "goalsAvg": 2.35, "cornAvg": 9.5, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": true } }
 };
