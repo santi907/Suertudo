@@ -82,12 +82,27 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam) {
       cornAvg, hRating.atk, hRating.def, aRating.atk, aRating.def, CORNER_HOME_BIAS
     );
     const totalCorners = lCornerHome + lCornerAway;
+    const r = liga.cornR || 20;
     cornerProbs = {
-      over7: stats.negBinOver(totalCorners, 7.5, liga.cornR || 20),
-      over8: stats.negBinOver(totalCorners, 8.5, liga.cornR || 20),
-      over9: stats.negBinOver(totalCorners, 9.5, liga.cornR || 20),
-      over10: stats.negBinOver(totalCorners, 10.5, liga.cornR || 20),
-      over11: stats.negBinOver(totalCorners, 11.5, liga.cornR || 20),
+      over7: stats.negBinOver(totalCorners, 7.5, r),
+      over8: stats.negBinOver(totalCorners, 8.5, r),
+      over9: stats.negBinOver(totalCorners, 9.5, r),
+      over10: stats.negBinOver(totalCorners, 10.5, r),
+      over11: stats.negBinOver(totalCorners, 11.5, r),
+      porEquipo: {
+        local: {
+          esperado: lCornerHome,
+          // Usa el mismo "r" de la liga aplicado a la porción de cada equipo
+          // (aproximación: no hay un dato real de dispersión por equipo)
+          over3: stats.negBinOver(lCornerHome, 3.5, r),
+          over4: stats.negBinOver(lCornerHome, 4.5, r),
+        },
+        visitante: {
+          esperado: lCornerAway,
+          over3: stats.negBinOver(lCornerAway, 3.5, r),
+          over4: stats.negBinOver(lCornerAway, 4.5, r),
+        }
+      }
     };
   }
 
