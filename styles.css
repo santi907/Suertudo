@@ -120,6 +120,12 @@ button {
   text-transform: uppercase;
 }
 
+.corner-team-title {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #333;
+}
+
 .card h3 small {
   color: #999;
   font-weight: normal;
