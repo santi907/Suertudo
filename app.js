@@ -147,6 +147,22 @@ document.addEventListener('DOMContentLoaded', () => {
         <div>Over 9.5: ${fmt(data.cornerProbs.over9)}%</div>
         <div>Over 10.5: ${fmt(data.cornerProbs.over10)}%</div>
         <div>Over 11.5: ${fmt(data.cornerProbs.over11)}%</div>
+        <h3 class="corner-team-title">Córners por equipo</h3>
+        <div class="compare-row compare-head">
+          <span></span><span>Esperados</span><span>Over 3.5</span><span>Over 4.5</span>
+        </div>
+        <div class="compare-row">
+          <span>${data.homeTeam}</span>
+          <span>${fmt(data.cornerProbs.porEquipo.local.esperado)}</span>
+          <span>${fmt(data.cornerProbs.porEquipo.local.over3)}%</span>
+          <span>${fmt(data.cornerProbs.porEquipo.local.over4)}%</span>
+        </div>
+        <div class="compare-row">
+          <span>${data.awayTeam}</span>
+          <span>${fmt(data.cornerProbs.porEquipo.visitante.esperado)}</span>
+          <span>${fmt(data.cornerProbs.porEquipo.visitante.over3)}%</span>
+          <span>${fmt(data.cornerProbs.porEquipo.visitante.over4)}%</span>
+        </div>
       </div>` : ''}
       ${comparisonCard}
     `;
