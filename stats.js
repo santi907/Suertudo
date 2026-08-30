@@ -31,6 +31,18 @@ export function poissonOver(lambda, th) {
     return Math.min(98, Math.max(2, (1 - poissonProb(lambda, Math.floor(th))) * 100)); 
 }
 
+// Over 1.5 usando las mismas celdas ajustadas por Dixon-Coles que ya usan
+// calcResultProbs y calcBTTS (antes se calculaba con Poisson independiente,
+// inconsistente con el resto). Over 2.5 y 3.5 no cambian con este ajuste
+// -verificado numéricamente- así que esos siguen usando poissonOver normal.
+export function over15DC(lH, lA, leagueKey) {
+    const rho = DIXON_COLES_RHO[leagueKey] || DIXON_COLES_RHO.default;
+    const p00 = poissonExact(lH, 0) * poissonExact(lA, 0) * dixonColesTau(0, 0, lH, lA, rho);
+    const p10 = poissonExact(lH, 1) * poissonExact(lA, 0) * dixonColesTau(1, 0, lH, lA, rho);
+    const p01 = poissonExact(lH, 0) * poissonExact(lA, 1) * dixonColesTau(0, 1, lH, lA, rho);
+    return Math.min(98, Math.max(2, (1 - (p00 + p10 + p01)) * 100));
+}
+
 export function negBinExact(mu, r, k) {
     if (k < 0) return 0;
     if (k === 0) return Math.pow(r / (r + mu), r);
