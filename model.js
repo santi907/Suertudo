@@ -33,18 +33,20 @@ function getTeamRating(leagueKey, teamName, dynamicRatings) {
   return getTeamsForLeague(leagueKey)[teamName] || { atk: 1.0, def: 1.0 };
 }
 
-// Promedia nuestro modelo con el de Bzzoiro solo en los mercados que ambos cubren
+// Promedia nuestro modelo con el de Bzzoiro, pesando según la confianza que
+// Bzzoiro declara en su propia predicción (si no la manda, usa 50/50 llano)
 function blend(own, ml) {
-  const avg = (a, b) => +(((a + b) / 2)).toFixed(1);
+  const w = typeof ml.confidence === 'number' ? Math.min(1, Math.max(0, ml.confidence)) : 0.5;
+  const mix = (ownVal, mlVal) => +((ownVal * (1 - w) + mlVal * w)).toFixed(1);
   return {
     resultProbs: {
-      local: avg(own.resultProbs.local, ml.resultProbs.local),
-      empate: avg(own.resultProbs.empate, ml.resultProbs.empate),
-      visitante: avg(own.resultProbs.visitante, ml.resultProbs.visitante),
+      local: mix(own.resultProbs.local, ml.resultProbs.local),
+      empate: mix(own.resultProbs.empate, ml.resultProbs.empate),
+      visitante: mix(own.resultProbs.visitante, ml.resultProbs.visitante),
     },
-    over15: avg(own.over15, ml.over15),
-    over25: avg(own.over25, ml.over25),
-    btts: avg(own.btts, ml.btts),
+    over15: mix(own.over15, ml.over15),
+    over25: mix(own.over25, ml.over25),
+    btts: mix(own.btts, ml.btts),
   };
 }
 
@@ -70,7 +72,7 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam) {
 
   const resultProbs = stats.calcResultProbs(lambdaHome, lambdaAway, leagueKey);
 
-  const over15 = stats.poissonOver(lambdaHome + lambdaAway, 1.5);
+  const over15 = stats.over15DC(lambdaHome, lambdaAway, leagueKey);
   const over25 = stats.poissonOver(lambdaHome + lambdaAway, 2.5);
   const over35 = stats.poissonOver(lambdaHome + lambdaAway, 3.5);
 
@@ -106,14 +108,21 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam) {
     };
   }
 
+  const calLocal = stats.plattCalibrate(resultProbs.home, 'resultado');
+  const calEmpate = stats.plattCalibrate(resultProbs.draw, 'resultado');
+  const calVisitante = stats.plattCalibrate(resultProbs.away, 'resultado');
+  // Cada probabilidad se calibra por separado, así que ya no suman
+  // exactamente 100 — se renormaliza manteniendo las proporciones.
+  const sumaCal = calLocal + calEmpate + calVisitante;
+
   const ownResult = {
     liga: liga.name,
     homeTeam,
     awayTeam,
     resultProbs: {
-      local: stats.plattCalibrate(resultProbs.home, 'resultado'),
-      empate: stats.plattCalibrate(resultProbs.draw, 'resultado'),
-      visitante: stats.plattCalibrate(resultProbs.away, 'resultado'),
+      local: +(calLocal * 100 / sumaCal).toFixed(1),
+      empate: +(calEmpate * 100 / sumaCal).toFixed(1),
+      visitante: +(calVisitante * 100 / sumaCal).toFixed(1),
     },
     over15: stats.plattCalibrate(over15, 'goals15'),
     over25: stats.plattCalibrate(over25, 'goals25'),
