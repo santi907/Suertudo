@@ -125,7 +125,6 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam) {
     over15: stats.plattCalibrate(over15, 'goals15'),
     over25: stats.plattCalibrate(over25, 'goals25'),
     over35,
-     },
     btts: stats.plattCalibrate(btts, 'btts'),
     cornerProbs
   };
