@@ -100,13 +100,31 @@ document.addEventListener('DOMContentLoaded', () => {
     return Number(n).toFixed(1);
   }
 
+  // Fila completa: etiqueta + valor + barra semáforo (color y largo según prob.)
+  function fila(label, prob) {
+    const color = getColor(prob);
+    const pct = Math.max(0, Math.min(100, prob));
+    return `
+      <div class="prob-row">
+        <div class="prob-row-top"><span>${label}</span><span class="prob" style="color:${color}">${fmt(prob)}%</span></div>
+        <div class="semaforo-track"><div class="semaforo-fill" style="width:${pct}%;background:${color}"></div></div>
+      </div>`;
+  }
+
+  // Versión compacta para las tablas de 4 columnas (valor arriba, barra fina abajo)
+  function gridProb(val) {
+    const color = getColor(val);
+    const pct = Math.max(0, Math.min(100, val));
+    return `<span class="grid-prob"><span class="grid-prob-value" style="color:${color}">${fmt(val)}%</span><span class="grid-prob-bar"><span style="width:${pct}%;background:${color}"></span></span></span>`;
+  }
+
   function displayResults(data) {
-    const compareRow = (label, own, ml, blended, suffix = '%') => `
+    const compareRow = (label, own, ml, blended) => `
       <div class="compare-row">
         <span>${label}</span>
-        <span>${fmt(own)}${suffix}</span>
-        <span>${fmt(ml)}${suffix}</span>
-        <span>${fmt(blended)}${suffix}</span>
+        ${gridProb(own)}
+        ${gridProb(ml)}
+        ${gridProb(blended)}
       </div>`;
 
     const comparisonCard = data.bzzoiroML ? `
@@ -128,40 +146,41 @@ document.addEventListener('DOMContentLoaded', () => {
     predictionsContent.innerHTML = `
       <div class="card">
         <h3>Resultado 1X2</h3>
-        <div>Local: <span class="prob" style="color:${getColor(data.resultProbs.local)}">${fmt(data.resultProbs.local)}%</span></div>
-        <div>Empate: <span class="prob" style="color:${getColor(data.resultProbs.empate)}">${fmt(data.resultProbs.empate)}%</span></div>
-        <div>Visitante: <span class="prob" style="color:${getColor(data.resultProbs.visitante)}">${fmt(data.resultProbs.visitante)}%</span></div>
+        ${fila('Local', data.resultProbs.local)}
+        ${fila('Empate', data.resultProbs.empate)}
+        ${fila('Visitante', data.resultProbs.visitante)}
       </div>
       <div class="card">
         <h3>Goles</h3>
-        <div>Over 1.5: ${fmt(data.over15)}%</div>
-        <div>Over 2.5: ${fmt(data.over25)}%</div>
-        <div>Over 3.5: ${fmt(data.over35)}%</div>
-        <div>BTTS: ${fmt(data.btts)}%</div>
+        ${fila('Over 1.5', data.over15)}
+        ${fila('Over 2.5', data.over25)}
+        ${fila('Over 3.5', data.over35)}
+      </div>
+      <div class="card">
+        <h3>Ambos marcan (BTTS)</h3>
+        ${fila('Sí', data.btts)}
       </div>
       ${data.cornerProbs ? `
       <div class="card">
         <h3>Córneres</h3>
-        <div>Over 7.5: ${fmt(data.cornerProbs.over7)}%</div>
-        <div>Over 8.5: ${fmt(data.cornerProbs.over8)}%</div>
-        <div>Over 9.5: ${fmt(data.cornerProbs.over9)}%</div>
-        <div>Over 10.5: ${fmt(data.cornerProbs.over10)}%</div>
-        <div>Over 11.5: ${fmt(data.cornerProbs.over11)}%</div>
+        ${fila('Over 7.5', data.cornerProbs.over7)}
+        ${fila('Over 8.5', data.cornerProbs.over8)}
+        ${fila('Over 9.5', data.cornerProbs.over9)}
         <h3 class="corner-team-title">Córners por equipo</h3>
         <div class="compare-row compare-head">
           <span></span><span>Esperados</span><span>Over 3.5</span><span>Over 4.5</span>
         </div>
         <div class="compare-row">
           <span>${data.homeTeam}</span>
-          <span>${fmt(data.cornerProbs.porEquipo.local.esperado)}</span>
-          <span>${fmt(data.cornerProbs.porEquipo.local.over3)}%</span>
-          <span>${fmt(data.cornerProbs.porEquipo.local.over4)}%</span>
+          <span class="grid-plain">${fmt(data.cornerProbs.porEquipo.local.esperado)}</span>
+          ${gridProb(data.cornerProbs.porEquipo.local.over3)}
+          ${gridProb(data.cornerProbs.porEquipo.local.over4)}
         </div>
         <div class="compare-row">
           <span>${data.awayTeam}</span>
-          <span>${fmt(data.cornerProbs.porEquipo.visitante.esperado)}</span>
-          <span>${fmt(data.cornerProbs.porEquipo.visitante.over3)}%</span>
-          <span>${fmt(data.cornerProbs.porEquipo.visitante.over4)}%</span>
+          <span class="grid-plain">${fmt(data.cornerProbs.porEquipo.visitante.esperado)}</span>
+          ${gridProb(data.cornerProbs.porEquipo.visitante.over3)}
+          ${gridProb(data.cornerProbs.porEquipo.visitante.over4)}
         </div>
       </div>` : ''}
       ${comparisonCard}
