@@ -89,8 +89,6 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam) {
       over7: stats.negBinOver(totalCorners, 7.5, r),
       over8: stats.negBinOver(totalCorners, 8.5, r),
       over9: stats.negBinOver(totalCorners, 9.5, r),
-      over10: stats.negBinOver(totalCorners, 10.5, r),
-      over11: stats.negBinOver(totalCorners, 11.5, r),
       porEquipo: {
         local: {
           esperado: lCornerHome,
