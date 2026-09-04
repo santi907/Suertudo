@@ -50,11 +50,11 @@ function blend(own, ml) {
   };
 }
 
-export async function simulateMatch(leagueKey, homeTeam, awayTeam) {
+export async function simulateMatch(leagueKey, homeTeam, awayTeam, { staticOnly = false } = {}) {
   const liga = LIGAS[leagueKey];
   if (!liga) throw new Error('Liga no encontrada');
 
-  const dynamic = await getDynamicData(leagueKey, liga.name);
+  const dynamic = staticOnly ? null : await getDynamicData(leagueKey, liga.name);
   const goalsAvg = dynamic?.goalsAvg ?? liga.goalsAvg;
   const cornAvg = dynamic?.cornAvg ?? liga.cornAvg;
 
