@@ -714,7 +714,15 @@ export const DIXON_COLES_RHO = {
 
 export const PLATT_PARAMS = { goals15: { A: 0.951, B: -0.038 }, goals25: { A: 0.933, B: -0.055 }, btts: { A: 0.956, B: -0.034 }, corners: { A: 0.970, B: -0.022 }, goals_ht05: { A: 0.960, B: -0.030 }, goals_ht15: { A: 0.938, B: -0.048 }, resultado: { A: 0.918, B: -0.068 } };
 
+// Valor por defecto cuando no hay medición real para esa liga.
 export const CORNER_HOME_BIAS = 1.12;
+
+// Overrides por liga, calculados a partir de historiales reales (no adivinados).
+// BSA: 60 partidos reales de Brasileirão -> el local se lleva 62.5% de los
+// córners (386 de 618), lo que da un sesgo de 1.66 en vez del 1.12 genérico.
+export const CORNER_HOME_BIAS_LEAGUE = {
+  BSA: 1.66,
+};
 
 // Bzzoiro identifica las ligas con un id numérico propio, no con estos códigos
 // cortos. Para pedir datos en vivo hay que resolver el id real buscando por
