@@ -27,7 +27,10 @@ async function fetchFromAPI(endpoint) {
 
 // Quita el emoji de bandera / trofeo del nombre para comparar solo el texto
 function cleanName(name) {
-  return name.replace(/[^\p{L}\p{N}\s]/gu, '').trim().toLowerCase();
+  return name
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // saca tildes/acentos
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .trim().toLowerCase();
 }
 
 // ---------- Resolución de IDs reales de Bzzoiro ----------
@@ -48,22 +51,22 @@ export async function resolveLeagueId(leagueKey, leagueDisplayName) {
     return null;
   }
 
-  try {
-    const data = await fetchFromAPI(`/leagues/?country=${encodeURIComponent(country)}`);
-    const results = data.results || data || [];
-    const target = cleanName(leagueDisplayName);
-    const match = results.find(l => cleanName(l.name) === target)
-      || results.find(l => cleanName(l.name).includes(target) || target.includes(cleanName(l.name)));
+  const data = await fetchFromAPI(`/leagues/?country=${encodeURIComponent(country)}`);
+  const results = data.results || data || [];
+  const target = cleanName(leagueDisplayName);
+  const match = results.find(l => cleanName(l.name) === target)
+    || results.find(l => cleanName(l.name).includes(target) || target.includes(cleanName(l.name)));
 
-    const id = match ? match.id : null;
-    if (!id) console.warn(`⚠️ No se encontró "${leagueDisplayName}" (${country}) en Bzzoiro`);
-    leagueIdCache.set(leagueKey, id);
-    return id;
-  } catch (e) {
-    console.warn('⚠️ Error resolviendo liga en Bzzoiro:', e.message);
-    leagueIdCache.set(leagueKey, null);
-    return null;
+  if (!match) {
+    const candidatas = results.slice(0, 8).map(l => l.name).join(', ') || '(ninguna)';
+    throw new Error(
+      `"${leagueDisplayName}" no coincide con ningún nombre de liga que Bzzoiro tiene para ${country}. ` +
+      `Ligas que sí devolvió: ${candidatas}`
+    );
   }
+
+  leagueIdCache.set(leagueKey, match.id);
+  return match.id;
 }
 
 async function resolveCurrentSeason(bzzoiroLeagueId) {
