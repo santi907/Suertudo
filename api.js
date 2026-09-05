@@ -33,6 +33,18 @@ function cleanName(name) {
     .trim().toLowerCase();
 }
 
+function tokens(name) {
+  return cleanName(name).split(/\s+/).filter(Boolean);
+}
+
+// ¿todas las palabras de "chicas" aparecen en "grandes"? (en cualquier orden,
+// sin importar palabras de más en el medio — resuelve casos como
+// "Brasileirão A" vs "Brasileirão Serie A")
+function todasLasPalabrasEstan(chicas, grandes) {
+  const set = new Set(grandes);
+  return chicas.length > 0 && chicas.every(t => set.has(t));
+}
+
 // ---------- Resolución de IDs reales de Bzzoiro ----------
 // Bzzoiro usa sus propios ids numéricos (no nuestros códigos PL/MXL/etc).
 // Hay que resolverlos buscando por país y nombre, una sola vez, y cachear
@@ -54,8 +66,12 @@ export async function resolveLeagueId(leagueKey, leagueDisplayName) {
   const data = await fetchFromAPI(`/leagues/?country=${encodeURIComponent(country)}`);
   const results = data.results || data || [];
   const target = cleanName(leagueDisplayName);
+  const targetTokens = tokens(leagueDisplayName);
+
   const match = results.find(l => cleanName(l.name) === target)
-    || results.find(l => cleanName(l.name).includes(target) || target.includes(cleanName(l.name)));
+    || results.find(l => cleanName(l.name).includes(target) || target.includes(cleanName(l.name)))
+    || results.find(l => todasLasPalabrasEstan(targetTokens, tokens(l.name)))
+    || results.find(l => todasLasPalabrasEstan(tokens(l.name), targetTokens));
 
   if (!match) {
     const candidatas = results.slice(0, 8).map(l => l.name).join(', ') || '(ninguna)';
