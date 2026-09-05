@@ -113,8 +113,8 @@ btn.addEventListener('click', async () => {
 
     log(`Resolviendo id de Bzzoiro para ${liga.name}...`);
     const bzzoiroId = await resolveLeagueId(leagueKey, liga.name);
-    if (!bzzoiroId) {
-      log('❌ No se pudo resolver esta liga en Bzzoiro (puede ser una competición continental). Probá con otra.');
+    if (bzzoiroId === null) {
+      log('❌ Esta competición no tiene un país único en Bzzoiro (torneo continental) — no se puede exportar.');
       btn.disabled = false;
       return;
     }
