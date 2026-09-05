@@ -106,11 +106,15 @@ export function normalizeCornersAvg(v) {
 }
 
 export function splitCornerLambda(totalCorners, homeAtk, homeDef, awayAtk, awayDef, homeBias) {
-    const avgPerTeam = totalCorners / 2;
-    // Un equipo fuerza más córners cuanto más ataca él y peor defiende el rival
+    // homeBias representa el reparto real local/visitante: con homeBias=1.66,
+    // el local se queda con 1.66/(1.66+1) = 62.4% del total (medido de datos
+    // reales). Con equipos promedio (factor=1 en ambos) la suma da exactamente
+    // totalCorners — antes el bias solo inflaba al local sin tocar al
+    // visitante, lo que aumentaba el total en vez de solo repartirlo.
+    const homeShareBase = homeBias / (homeBias + 1);
     const homeFactor = (homeAtk + awayDef) / 2;
     const awayFactor = (awayAtk + homeDef) / 2;
-    const home = +(avgPerTeam * homeFactor * homeBias).toFixed(2);
-    const away = +(avgPerTeam * awayFactor).toFixed(2);
+    const home = +(totalCorners * homeShareBase * homeFactor).toFixed(2);
+    const away = +(totalCorners * (1 - homeShareBase) * awayFactor).toFixed(2);
     return { home, away };
 }
