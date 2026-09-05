@@ -1,4 +1,4 @@
-import { LIGAS, TEAM_STRENGTH_DB, HOME_ADVANTAGE, CORNER_HOME_BIAS } from './leagues.js';
+import { LIGAS, TEAM_STRENGTH_DB, HOME_ADVANTAGE, CORNER_HOME_BIAS, CORNER_HOME_BIAS_LEAGUE } from './leagues.js';
 import * as stats from './stats.js';
 import { fetchLeagueDynamicData, fetchMatchPrediction } from './api.js';
 
@@ -80,8 +80,9 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam, { staticOnly 
 
   let cornerProbs = null;
   if (cornAvg && cornAvg > 0) {
+    const cornBias = CORNER_HOME_BIAS_LEAGUE[leagueKey] ?? CORNER_HOME_BIAS;
     const { home: lCornerHome, away: lCornerAway } = stats.splitCornerLambda(
-      cornAvg, hRating.atk, hRating.def, aRating.atk, aRating.def, CORNER_HOME_BIAS
+      cornAvg, hRating.atk, hRating.def, aRating.atk, aRating.def, cornBias
     );
     const totalCorners = lCornerHome + lCornerAway;
     const r = liga.cornR || 20;
