@@ -343,7 +343,7 @@ export const TEAM_STRENGTH_DB = {
     "Avaí": { "atk": 0.98, "def": 1.08 },
     "Botafogo-SP": { "atk": 0.88, "def": 1.12 },
     "Ceará": { "atk": 1.08, "def": 0.95 },
-    "Clube de Regatas Brasil": { "atk": 0.92, "def": 1.10 },
+    "Clube De Regatas Brasil": { "atk": 0.92, "def": 1.10 },
     "Criciúma": { "atk": 1.05, "def": 1.00 },
     "Cuiabá": { "atk": 0.96, "def": 1.05 },
     "Fortaleza": { "atk": 1.18, "def": 0.92 },
