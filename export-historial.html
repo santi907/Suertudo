@@ -136,13 +136,18 @@ btn.addEventListener('click', async () => {
     const finales = eventos.slice(0, maxPartidos);
     log(`✅ ${finales.length} partidos encontrados. Trayendo corners de cada uno...`);
 
+    if (finales.length > 0) {
+      log(`🔎 Campos del primer partido (para revisar el de fecha): ${Object.keys(finales[0]).join(', ')}`);
+      log(`🔎 Valor crudo: ${JSON.stringify(finales[0]).slice(0, 500)}`);
+    }
+
     const partidos = [];
     for (let i = 0; i < finales.length; i++) {
       const ev = finales[i];
       try {
         const stats = await fetchAPI(`/events/${ev.id}/stats/`);
         partidos.push({
-          fecha: ev.date || ev.kickoff || null,
+          fecha: ev.date || ev.kickoff || ev.kickoff_time || ev.date_time || ev.datetime || ev.starting_at || ev.scheduled_at || null,
           local: ev.home_team || ev.home?.name || null,
           visitante: ev.away_team || ev.away?.name || null,
           goles_local: ev.home_score ?? null,
