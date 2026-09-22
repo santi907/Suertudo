@@ -54,7 +54,7 @@
   </div>
 
 <script type="module">
-import { LIGAS } from './leagues.js';
+import { LIGAS, BZZOIRO_COUNTRY } from './leagues.js';
 import { resolveLeagueId } from './api.js';
 
 const ligaSelect = document.getElementById('liga');
@@ -112,6 +112,12 @@ btn.addEventListener('click', async () => {
     const maxPartidos = Math.min(200, Math.max(1, +cantidadInput.value || 60));
 
     log(`Resolviendo id de Bzzoiro para ${liga.name}...`);
+    const pais = BZZOIRO_COUNTRY[leagueKey];
+    if (pais) {
+      const listado = await fetchAPI(`/leagues/?country=${encodeURIComponent(pais)}`);
+      const candidatas = (listado.results || listado || []).map(l => `${l.name} (id ${l.id})`).join(' | ');
+      log(`🔎 Ligas que Bzzoiro tiene para ${pais}: ${candidatas || '(ninguna)'}`);
+    }
     const bzzoiroId = await resolveLeagueId(leagueKey, liga.name);
     if (bzzoiroId === null) {
       log('❌ Esta competición no tiene un país único en Bzzoiro (torneo continental) — no se puede exportar.');
@@ -134,13 +140,20 @@ btn.addEventListener('click', async () => {
       await sleep(150);
     }
     const finales = eventos.slice(0, maxPartidos);
-    log(`✅ ${finales.length} partidos encontrados. Trayendo corners de cada uno...`);
+    log(`✅ ${finales.length} partidos encontrados. Trayendo corners y cuotas de cada uno...`);
 
     const partidos = [];
     for (let i = 0; i < finales.length; i++) {
       const ev = finales[i];
       try {
         const stats = await fetchAPI(`/events/${ev.id}/stats/`);
+        let odds = null;
+        try {
+          const o = await fetchAPI(`/events/${ev.id}/odds/`);
+          odds = o.odds || null;
+        } catch (e) {
+          // Sin cuotas para este partido puntual — no corta la exportación
+        }
         partidos.push({
           fecha: ev.event_date || null,
           local: ev.home_team || ev.home?.name || null,
@@ -149,6 +162,17 @@ btn.addEventListener('click', async () => {
           goles_visitante: ev.away_score ?? null,
           corners_local: stats.stats?.home?.corner_kicks ?? null,
           corners_visitante: stats.stats?.away?.corner_kicks ?? null,
+          odds_local: odds?.home_win ?? null,
+          odds_empate: odds?.draw ?? null,
+          odds_visitante: odds?.away_win ?? null,
+          odds_over15: odds?.over_15_goals ?? null,
+          odds_under15: odds?.under_15_goals ?? null,
+          odds_over25: odds?.over_25_goals ?? null,
+          odds_under25: odds?.under_25_goals ?? null,
+          odds_over35: odds?.over_35_goals ?? null,
+          odds_under35: odds?.under_35_goals ?? null,
+          odds_btts_si: odds?.btts_yes ?? null,
+          odds_btts_no: odds?.btts_no ?? null,
         });
       } catch (e) {
         log(`⚠️ Partido ${ev.id} falló (${e.message}), lo salteo`);
@@ -156,9 +180,10 @@ btn.addEventListener('click', async () => {
       if (i % 5 === 0) log(`  ${i + 1}/${finales.length}...`);
       await sleep(150);
     }
-
+    
     const conCorners = partidos.filter(p => p.corners_local != null && p.corners_visitante != null).length;
-    log(`\n✅ Listo. ${partidos.length} partidos, ${conCorners} con corners registrados.`);
+    const conOdds = partidos.filter(p => p.odds_local != null).length;
+    log(`\n✅ Listo. ${partidos.length} partidos, ${conCorners} con corners registrados, ${conOdds} con cuotas reales.`);
 
     const payload = { liga: liga.name, leagueKey, generado: new Date().toISOString(), partidos };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
