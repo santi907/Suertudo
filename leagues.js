@@ -670,50 +670,18 @@ export const TEAM_STRENGTH_DB = {
    "Alianza Valledupar FC": { "atk": 0.693,"def": 1.231 },
    "América de Cali": { "atk": 1.211,"def": 0.607 },
    "Atlético Bucaramanga": { "atk": 1.194,"def": 0.92 },
-  "Atlético Nacional": {
-    "atk": 1.432,
-    "def": 0.777
-  },
-  "Boyacá Chicó FC": {
-    "atk": 0.697,
-    "def": 1.33
-  },
-  "Deportes Tolima": {
-    "atk": 1.038,
-    "def": 0.812
-  },
-  "Deportivo Pasto": {
-    "atk": 0.768,
-    "def": 1.193
-  },
-  "Fortaleza FC": {
-    "atk": 0.86,
-    "def": 1.202
-  },
-  "Independiente Medellín": {
-    "atk": 1.323,
-    "def": 0.87
-  },
-  "Independiente Santa Fe": {
-    "atk": 1.329,
-    "def": 0.747
-  },
-  "Internacional de Bogotá": {
-    "atk": 0.959,
-    "def": 1.406
-  },
-  "Junior Barranquilla": {
-    "atk": 1.183,
-    "def": 0.96
-  },
-  "Millonarios": {
-    "atk": 1.161,
-    "def": 0.706
-  },
-  "Once Caldas": {
-    "atk": 0.914,
-    "def": 1.035
-  }
+   "Atlético Nacional": { "atk": 1.432,"def": 0.777 },
+   "Boyacá Chicó FC": { "atk": 0.697,"def": 1.33 },
+   "Deportes Tolima": { "atk": 1.038,"def": 0.812 },
+   "Deportivo Pasto": { "atk": 0.768,"def": 1.193 },
+   "Fortaleza FC": { "atk": 0.86,"def": 1.202 },
+   "Independiente Medellín": { "atk": 1.323,"def": 0.87 },
+   "Independiente Santa Fe": { "atk": 1.329,"def": 0.747 },
+   "Internacional de Bogotá": { "atk": 0.959,"def": 1.406 },
+   "Junior Barranquilla": { "atk": 1.183,"def": 0.96 },
+   "Millonarios": { "atk": 1.161,"def": 0.706 },
+   "Once Caldas": { "atk": 0.914,"def": 1.035 }
+    },
 };
 
 export const HOME_ADVANTAGE = {
