@@ -25,7 +25,7 @@ export const LIGAS = {
   "EKS": { "name": "🇵🇱 Ekstraklasa (Polonia)", "goalsAvg": 2.55, "cornAvg": 9.5, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": true } },
   "SPL": { "name": "🇸🇦 Saudi Pro League", "goalsAvg": 2.90, "cornAvg": 9.6, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": false } },
   "SPFL": { "name": "🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Premiership(Escocia)", "goalsAvg": 2.75, "cornAvg": 10.2, "cornR": 19, "markets": { "goles": true, "btts": true, "corn": false } },
-  "COPPAITALIA": { "name": "🏆 Coppa Italia", "goalsAvg": 2.50, "cornAvg": 9.4, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": true },
+  "COPPAITALIA": { "name": "🏆 Coppa Italia", "goalsAvg": 2.50, "cornAvg": 9.4, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": true } },
   "UCL": { "name": "⭐ Champions League", "goalsAvg": 2.75, "cornAvg": 10.0, "cornR": 18, "markets": { "goles": false, "btts": true, "corn": true } },
   "UEL": { "name": "🟠 Europa League", "goalsAvg": 2.65, "cornAvg": 9.7, "cornR": 17, "markets": { "goles": false, "btts": true, "corn": false } },
   "SD2": { "name": "🇪🇸 Segunda División", "goalsAvg": 2.45, "cornAvg": 9.4, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": true } },
@@ -428,7 +428,7 @@ export const TEAM_STRENGTH_DB = {
   "St. Mirren": { "atk": 0.96, "def": 1.05 },
   "Aberdeen": { "atk": 1.08, "def": 1.02 }
   },
-  "COPPAITALIA" {
+  "COPPAITALIA": {
   "AC Milan": { "atk": 1.28, "def": 0.94 },
   "Arezzo": { "atk": 0.90, "def": 1.02 },
   "Ascoli": { "atk": 0.88, "def": 1.06 },
