@@ -26,7 +26,6 @@ export const LIGAS = {
   "SPL": { "name": "🇸🇦 Saudi Pro League", "goalsAvg": 2.90, "cornAvg": 9.6, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": false } },
   "SPFL": { "name": "🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Premiership(Escocia)", "goalsAvg": 2.75, "cornAvg": 10.2, "cornR": 19, "markets": { "goles": true, "btts": true, "corn": false } },
   "COPPAITALIA": { "name": "🏆 Coppa Italia", "goalsAvg": 2.50, "cornAvg": 9.4, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": true },
-  "VEIK": { "name": "🇫🇮 Veikkausliiga (Finlandia)", "goalsAvg": 2.80, "cornAvg": 9.5, "cornR": 16, "markets": { "goles": false, "btts": true, "corn": false } },
   "UCL": { "name": "⭐ Champions League", "goalsAvg": 2.75, "cornAvg": 10.0, "cornR": 18, "markets": { "goles": false, "btts": true, "corn": true } },
   "UEL": { "name": "🟠 Europa League", "goalsAvg": 2.65, "cornAvg": 9.7, "cornR": 17, "markets": { "goles": false, "btts": true, "corn": false } },
   "SD2": { "name": "🇪🇸 Segunda División", "goalsAvg": 2.45, "cornAvg": 9.4, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": true } },
@@ -475,20 +474,6 @@ export const TEAM_STRENGTH_DB = {
   "Venezia": { "atk": 0.92, "def": 1.20 },
   "Virtus Entella": { "atk": 0.91, "def": 0.93 }
   },
-  "VEIK": {
-    "AC Oulu": { "atk": 0.94, "def": 1.06 },
-    "FC Lahti": { "atk": 0.90, "def": 1.08 },
-    "FF Jaro": { "atk": 0.84, "def": 1.12 },
-    "HJK": { "atk": 1.22, "def": 0.90 },
-    "IF Gnistan": { "atk": 0.88, "def": 1.09 },
-    "IFK Mariehamn": { "atk": 0.82, "def": 1.14 },
-    "Ilves": { "atk": 1.10, "def": 0.96 },
-    "Inter Turku": { "atk": 1.08, "def": 0.98 },
-    "Kuopion Palloseura": { "atk": 1.16, "def": 0.94 },
-    "SJK": { "atk": 1.00, "def": 1.02 },
-    "Turun Palloseura": { "atk": 0.92, "def": 1.07 },
-    "VPS": { "atk": 1.02, "def": 1.01 }
-  },
   "UCL": {
     "AGF": { "atk": 1.02, "def": 1.00 },
     "Atert Bissen": { "atk": 0.82, "def": 1.14 },
@@ -677,7 +662,7 @@ export const HOME_ADVANTAGE = {
   "DED": 1.08, "BSA": 1.12, "ELC": 1.07, "JPL": 1.07, "MXL": 1.06,
   "LIB": 1.10, "MLS": 1.11, "BSB": 1.10, "PPT": 1.06, "EKS": 1.05,
   "SLG": 1.05, "ROU1": 1.06, "SPL": 1.08,
-  "SPFL": 1.07, "SD2": 1.05, "VEIK": 1.06, "UCL": 1.06, "UEL": 1.07,
+  "SPFL": 1.07, "SD2": 1.05, "UCL": 1.06, "UEL": 1.07,
   "COPADELREY": 1.03, "COPPAITALIA": 1.03,"CPA": 1.06
 };
 
@@ -687,7 +672,7 @@ export const DIXON_COLES_RHO = {
   "JPL": -0.082, "MXL": -0.095, "LIB": -0.088, "MLS": -0.070,
   "BSB": -0.092, "PPT": -0.080, "EKS": -0.085, "SLG": -0.100,
   "ROU1": -0.082, "SPL": -0.075,
-  "SPFL": -0.080, "SD2": -0.085, "VEIK": -0.078, "UCL": -0.070,
+  "SPFL": -0.080, "SD2": -0.085, "UCL": -0.070,
   "UEL": -0.078, "COPADELREY": -0.090, "COPPAITALIA": -0.090,
   "CPA": -0.095,
   "default": -0.13
@@ -725,7 +710,6 @@ export const BZZOIRO_COUNTRY = {
   EKS: 'Poland',
   SPL: 'Saudi Arabia',
   SPFL: 'Scotland',
-  VEIK: 'Finland',
   NPLQLD: 'Australia',
   ELITE: 'Norway',
   ALLSV: 'Sweden',
