@@ -463,7 +463,6 @@ export const TEAM_STRENGTH_DB = {
   "Virtus Entella": { "atk": 0.91, "def": 0.93 }
   },
   "SPFL": {
-  "Aberdeen": { "atk": 1.08, "def": 1.02 },
   "Celtic": { "atk": 1.45, "def": 0.78 },
   "Dundee FC": { "atk": 1.05, "def": 1.04 },
   "Dundee United": { "atk": 0.98, "def": 1.06 },
@@ -474,7 +473,8 @@ export const TEAM_STRENGTH_DB = {
   "Motherwell": { "atk": 1.02, "def": 1.12 },
   "Rangers": { "atk": 1.35, "def": 0.82 },
   "St. Johnstone": { "atk": 0.94, "def": 1.15 },
-  "St. Mirren": { "atk": 0.96, "def": 1.05 }
+  "St. Mirren": { "atk": 0.96, "def": 1.05 },
+  "Aberdeen": { "atk": 1.08, "def": 1.02 }
   },
   "VEIK": {
     "AC Oulu": { "atk": 0.94, "def": 1.06 },
