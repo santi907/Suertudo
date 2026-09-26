@@ -25,7 +25,7 @@ export const LIGAS = {
   "EKS": { "name": "🇵🇱 Ekstraklasa (Polonia)", "goalsAvg": 2.55, "cornAvg": 9.5, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": true } },
   "SPL": { "name": "🇸🇦 Saudi Pro League", "goalsAvg": 2.90, "cornAvg": 9.6, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": false } },
   "SPFL": { "name": "🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Premiership(Escocia)", "goalsAvg": 2.75, "cornAvg": 10.2, "cornR": 19, "markets": { "goles": true, "btts": true, "corn": false } },
-  "COPPAITALIA": { "name": "🏆 Coppa Italia", "goalsAvg": 2.50, "cornAvg": 9.4, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": true }, "compositeOf": ["SA", "SB2"] },
+  "COPPAITALIA": { "name": "🏆 Coppa Italia", "goalsAvg": 2.50, "cornAvg": 9.4, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": true },
   "VEIK": { "name": "🇫🇮 Veikkausliiga (Finlandia)", "goalsAvg": 2.80, "cornAvg": 9.5, "cornR": 16, "markets": { "goles": false, "btts": true, "corn": false } },
   "UCL": { "name": "⭐ Champions League", "goalsAvg": 2.75, "cornAvg": 10.0, "cornR": 18, "markets": { "goles": false, "btts": true, "corn": true } },
   "UEL": { "name": "🟠 Europa League", "goalsAvg": 2.65, "cornAvg": 9.7, "cornR": 17, "markets": { "goles": false, "btts": true, "corn": false } },
