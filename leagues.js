@@ -463,18 +463,18 @@ export const TEAM_STRENGTH_DB = {
   "Virtus Entella": { "atk": 0.91, "def": 0.93 }
   },
   "SPFL": {
-    "Aberdeen": { "atk": 1.10, "def": 0.98 },
-    "Celtic": { "atk": 1.28, "def": 0.86 },
-    "Dundee FC": { "atk": 0.88, "def": 1.10 },
-    "Dundee United": { "atk": 0.94, "def": 1.06 },
-    "Falkirk FC": { "atk": 0.86, "def": 1.12 },
-    "Heart of Midlothian": { "atk": 1.14, "def": 0.94 },
-    "Hibernian": { "atk": 1.02, "def": 1.02 },
-    "Kilmarnock": { "atk": 0.90, "def": 1.08 },
-    "Motherwell": { "atk": 0.92, "def": 1.07 },
-    "Rangers": { "atk": 1.26, "def": 0.88 },
-    "St. Johnstone": { "atk": 0.82, "def": 1.14 },
-    "St. Mirren": { "atk": 0.88, "def": 1.10 }
+  "Aberdeen": { "atk": 1.08, "def": 1.02 },
+  "Celtic": { "atk": 1.45, "def": 0.78 },
+  "Dundee FC": { "atk": 1.05, "def": 1.04 },
+  "Dundee United": { "atk": 0.98, "def": 1.06 },
+  "Falkirk FC": { "atk": 0.92, "def": 1.10 },
+  "Heart of Midlothian": { "atk": 1.20, "def": 0.90 },
+  "Hibernian": { "atk": 1.00, "def": 1.08 },
+  "Kilmarnock": { "atk": 0.88, "def": 1.22 },
+  "Motherwell": { "atk": 1.02, "def": 1.12 },
+  "Rangers": { "atk": 1.35, "def": 0.82 },
+  "St. Johnstone": { "atk": 0.94, "def": 1.15 },
+  "St. Mirren": { "atk": 0.96, "def": 1.05 }
   },
   "VEIK": {
     "AC Oulu": { "atk": 0.94, "def": 1.06 },
