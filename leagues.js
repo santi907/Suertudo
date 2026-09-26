@@ -675,6 +675,12 @@ export const TEAM_STRENGTH_DB = {
    "Deportes Tolima": { "atk": 1.038,"def": 0.812 },
    "Deportivo Pasto": { "atk": 0.768,"def": 1.193 },
    "Fortaleza FC": { "atk": 0.86,"def": 1.202 },
+   "Cúcuta Deportivo": { "atk": 0.79, "def": 1.17 },
+   "Deportivo Cali": { "atk": 0.98, "def": 0.98 },
+   "Deportivo Pereira": { "atk": 0.67, "def": 1.22 },
+   "Jaguares de Córdoba": { "atk": 0.76, "def": 1.16 },
+   "Llaneros FC": { "atk": 0.81, "def": 1.09 },
+   "Rionegro Águilas Doradas": { "atk": 0.96, "def": 1.01 }
    "Independiente Medellín": { "atk": 1.323,"def": 0.87 },
    "Independiente Santa Fe": { "atk": 1.329,"def": 0.747 },
    "Internacional de Bogotá": { "atk": 0.959,"def": 1.406 },
