@@ -667,26 +667,52 @@ export const TEAM_STRENGTH_DB = {
     "Servette FC": { "atk": 1.12, "def": 0.95 }
   },
   "CPA": {
-  "Alianza Valledupar FC": { "atk": 0.78, "def": 1.18 },
-  "América de Cali": { "atk": 1.08, "def": 0.86 },
-  "Atlético Bucaramanga": { "atk": 0.94, "def": 0.97 },
-  "Atlético Nacional": { "atk": 1.18, "def": 0.90 },
-  "Boyacá Chicó FC": { "atk": 0.72, "def": 1.24 },
-  "Cúcuta Deportivo": { "atk": 0.79, "def": 1.17 },
-  "Deportes Tolima": { "atk": 1.07, "def": 0.91 },
-  "Deportivo Cali": { "atk": 0.98, "def": 0.98 },
-  "Deportivo Pasto": { "atk": 0.88, "def": 1.02 },
-  "Deportivo Pereira": { "atk": 0.67, "def": 1.22 },
-  "Fortaleza FC": { "atk": 0.84, "def": 1.08 },
-  "Independiente Medellín": { "atk": 1.03, "def": 0.94 },
-  "Independiente Santa Fe": { "atk": 1.10, "def": 0.89 },
-  "Internacional de Bogotá": { "atk": 0.82, "def": 1.12 },
-  "Jaguares de Córdoba": { "atk": 0.76, "def": 1.16 },
-  "Junior Barranquilla": { "atk": 1.02, "def": 1.00 },
-  "Llaneros FC": { "atk": 0.81, "def": 1.09 },
-  "Millonarios": { "atk": 1.04, "def": 0.95 },
-  "Once Caldas": { "atk": 1.11, "def": 0.87 },
-  "Rionegro Águilas Doradas": { "atk": 0.96, "def": 1.01 }
+   "Alianza Valledupar FC": { "atk": 0.693,"def": 1.231 },
+   "América de Cali": { "atk": 1.211,"def": 0.607 },
+   "Atlético Bucaramanga": { "atk": 1.194,"def": 0.92 },
+  "Atlético Nacional": {
+    "atk": 1.432,
+    "def": 0.777
+  },
+  "Boyacá Chicó FC": {
+    "atk": 0.697,
+    "def": 1.33
+  },
+  "Deportes Tolima": {
+    "atk": 1.038,
+    "def": 0.812
+  },
+  "Deportivo Pasto": {
+    "atk": 0.768,
+    "def": 1.193
+  },
+  "Fortaleza FC": {
+    "atk": 0.86,
+    "def": 1.202
+  },
+  "Independiente Medellín": {
+    "atk": 1.323,
+    "def": 0.87
+  },
+  "Independiente Santa Fe": {
+    "atk": 1.329,
+    "def": 0.747
+  },
+  "Internacional de Bogotá": {
+    "atk": 0.959,
+    "def": 1.406
+  },
+  "Junior Barranquilla": {
+    "atk": 1.183,
+    "def": 0.96
+  },
+  "Millonarios": {
+    "atk": 1.161,
+    "def": 0.706
+  },
+  "Once Caldas": {
+    "atk": 0.914,
+    "def": 1.035
   }
 };
 
