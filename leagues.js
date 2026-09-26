@@ -305,7 +305,7 @@ export const TEAM_STRENGTH_DB = {
     "Universitario de Deportes": { "atk": 0.94, "def": 1.09 }
   },
   "MLS": {
-    Atlanta United": { "atk": 0.88, "def": 1.12 },
+  "Atlanta United": { "atk": 0.88, "def": 1.12 },
   "Austin FC": { "atk": 0.94, "def": 1.06 },
   "CF Montréal": { "atk": 0.85, "def": 1.25 },
   "Charlotte FC": { "atk": 1.15, "def": 0.90 },
