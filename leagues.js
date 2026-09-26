@@ -739,7 +739,7 @@ export const BZZOIRO_COUNTRY = {
   BSA: 'Brazil', BSB: 'Brazil',
   MXL: 'Mexico',
   JPL: 'Belgium',
-  MLS: 'United States', USLC: 'United States',
+  MLS: 'USA', USLC: 'United States',
   PPT: 'Portugal',
   EKS: 'Poland',
   SPL: 'Saudi Arabia',
