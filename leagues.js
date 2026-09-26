@@ -736,7 +736,7 @@ export const BZZOIRO_COUNTRY = {
   PD: 'Spain', SD2: 'Spain', COPADELREY: 'Spain',
   FL1: 'France',
   DED: 'Netherlands',
-  BSA: 'Brazil', BSB: 'Brazil',
+  BSA: 'Brasileirão Serie A', BSB: 'Brasileirão Serie B',
   MXL: 'Mexico',
   JPL: 'Belgium',
   MLS: 'USA', USLC: 'Championchip',
