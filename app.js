@@ -134,12 +134,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="compare-row compare-head">
           <span></span><span>Poisson</span><span>Bzzoiro ML</span><span>Promedio</span>
         </div>
-        ${compareRow('Local', data.resultProbs.local, data.bzzoiroML.resultProbs.local, data.blended.resultProbs.local)}
-        ${compareRow('Empate', data.resultProbs.empate, data.bzzoiroML.resultProbs.empate, data.blended.resultProbs.empate)}
-        ${compareRow('Visitante', data.resultProbs.visitante, data.bzzoiroML.resultProbs.visitante, data.blended.resultProbs.visitante)}
-        ${compareRow('Over 1.5', data.over15, data.bzzoiroML.over15, data.blended.over15)}
-        ${compareRow('Over 2.5', data.over25, data.bzzoiroML.over25, data.blended.over25)}
-        ${compareRow('BTTS', data.btts, data.bzzoiroML.btts, data.blended.btts)}
+        ${compareRow('Local', data.resultProbs.local, data.bzzoiroML.resultProbs.local, data.blended.resultProbs.local)}${compareRow('Empate', data.resultProbs.empate, data.bzzoiroML.resultProbs.empate, data.blended.resultProbs.empate)}
+        ${compareRow('Visitante', data.resultProbs.visitante, data.bzzoiroML.resultProbs.visitante, data.blended.resultProbs.visitante)}${compareRow('Over 1.5', data.over15, data.bzzoiroML.over15, data.blended.over15)}
+        ${compareRow('Over 2.5', data.over25, data.bzzoiroML.over25, data.blended.over25)}${compareRow('BTTS', data.btts, data.bzzoiroML.btts, data.blended.btts)}
         ` : `<div class="compare-row"><span>Datos ML parciales para este partido — se muestra solo tu modelo.</span></div>`}
       </div>` : '';
 
@@ -164,8 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="card">
         <h3>Córneres</h3>
         ${fila('Over 7.5', data.cornerProbs.over7)}
-        ${fila('Over 8.5', data.cornerProbs.over8)}
-        ${fila('Over 9.5', data.cornerProbs.over9)}
+        ${fila('Over 8.5', data.cornerProbs.over8)}${fila('Over 9.5', data.cornerProbs.over9)}
         <h3 class="corner-team-title">Córners por equipo</h3>
         <div class="compare-row compare-head">
           <span></span><span>Esperados</span><span>Over 3.5</span><span>Over 4.5</span>
@@ -173,14 +169,12 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="compare-row">
           <span>${data.homeTeam}</span>
           <span class="grid-plain">${fmt(data.cornerProbs.porEquipo.local.esperado)}</span>
-          ${gridProb(data.cornerProbs.porEquipo.local.over3)}
-          ${gridProb(data.cornerProbs.porEquipo.local.over4)}
+          ${gridProb(data.cornerProbs.porEquipo.local.over3)}${gridProb(data.cornerProbs.porEquipo.local.over4)}
         </div>
         <div class="compare-row">
           <span>${data.awayTeam}</span>
           <span class="grid-plain">${fmt(data.cornerProbs.porEquipo.visitante.esperado)}</span>
-          ${gridProb(data.cornerProbs.porEquipo.visitante.over3)}
-          ${gridProb(data.cornerProbs.porEquipo.visitante.over4)}
+          ${gridProb(data.cornerProbs.porEquipo.visitante.over3)}${gridProb(data.cornerProbs.porEquipo.visitante.over4)}
         </div>
       </div>` : ''}
       ${comparisonCard}
@@ -197,4 +191,51 @@ document.addEventListener('DOMContentLoaded', () => {
   populateLeagues();
   const firstLeague = Object.keys(LIGAS)[0];
   if (firstLeague) populateTeams(firstLeague);
+
+  // --- NUEVO: Módulo de Sincronización Webhook ---
+  const syncBtn = document.getElementById('sync-crm-btn');
+  const syncStatus = document.getElementById('sync-status');
+
+  if (syncBtn) {
+    syncBtn.addEventListener('click', async () => {
+      // URL del webhook configurado para capturar y rutear datos hacia el CRM
+      const WEBHOOK_URL = 'https://tu-webhook-url.com/recepcion-picks';
+      
+      const picks = window.lastValuePicks || [];
+      
+      if (picks.length === 0) {
+        syncStatus.textContent = "No hay picks de valor para sincronizar hoy.";
+        syncStatus.style.color = "var(--yellow)";
+        return;
+      }
+
+      syncBtn.disabled = true;
+      syncStatus.textContent = "Sincronizando con plataforma...";
+      syncStatus.style.color = "var(--chalk)";
+
+      try {
+        const response = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            fecha: new Date().toISOString(), 
+            totalPicks: picks.length, 
+            picks: picks 
+          })
+        });
+
+        if (response.ok) {
+          syncStatus.textContent = `✅ ${picks.length} picks enviados exitosamente.`;
+          syncStatus.style.color = "var(--green)";
+        } else {
+          throw new Error('Error en la respuesta del endpoint');
+        }
+      } catch (error) {
+        syncStatus.textContent = `❌ Error: ${error.message}`;
+        syncStatus.style.color = "var(--red)";
+      } finally {
+        syncBtn.disabled = false;
+      }
+    });
+  }
 });
