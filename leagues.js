@@ -738,7 +738,7 @@ export const DIXON_COLES_RHO = {
   "JPL": -0.082, "MXL": -0.095, "LIB": -0.088, "MLS": -0.070,
   "BSB": -0.092, "PPT": -0.080, "EKS": -0.085,"SPL": -0.075, 
   "CDR": -0.050,"SPFL": -0.080, "SD2": -0.085, "UCL": -0.070,
-  "UEL": -0.078, "COPPAITALIA": -0.090, "ABL": -0.058 "ARG": -0.070 
+  "UEL": -0.078, "COPPAITALIA": -0.090, "ABL": -0.058 "ARG": -0.070,
   "CPA": -0.095, "default": -0.13
 };
 
