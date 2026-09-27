@@ -34,6 +34,8 @@ export const LIGAS = {
   "ELITE": { "name": "🇳🇴 Eliteserien (Noruega)", "goalsAvg": 2.94, "cornAvg": 9.6, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": false } },
   "ALLSV": { "name": "🇸🇪 Allsvenskan (Suecia)", "goalsAvg": 2.83, "cornAvg": 9.4, "cornR": 16, "markets": { "goles": false, "btts": true, "corn": false } },
   "SUI1": { "name": "🇨🇭 Super League (Suiza)", "goalsAvg": 3.34, "cornAvg": 10.0, "cornR": 18, "markets": { "goles": true, "btts": true, "corn": true } },
+  "ABL": { "name": "🇦🇹 Bundesliga (Austria)", "goalsAvg": 2.85, "cornAvg": 9.8, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": true } },
+  "ARG": { "name": "🇦🇷 Liga Profesional Argentina", "goalsAvg": 2.15, "cornAvg": 9.1, "cornR": 18, "markets": { "goles": true, "btts": true, "corn": true } },
   "CPA": { "name": "🇨🇴 Categoría Primera A", "goalsAvg": 2.35, "cornAvg": 9.5, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": true } }
 };
 
@@ -656,6 +658,48 @@ export const TEAM_STRENGTH_DB = {
     "Grasshopper Club Zürich": { "atk": 0.98, "def": 1.03 },
     "Servette FC": { "atk": 1.12, "def": 0.95 }
   },
+  "ABL": {
+    "FK Austria Wien": { "atk": 1.05, "def": 1.05 },
+    "Grazer AK 1902": { "atk": 0.85, "def": 1.35 },
+    "LASK": { "atk": 1.15, "def": 0.95 },
+    "Red Bull Salzburg": { "atk": 1.45, "def": 0.80 },
+    "SC Austria Lustenau": { "atk": 0.78, "def": 1.45 },
+    "SCR Altach": { "atk": 0.80, "def": 1.30 },
+    "SK Rapid Wien": { "atk": 1.20, "def": 0.98 },
+    "SK Sturm Graz": { "atk": 1.35, "def": 0.88 },
+    "SV Ried": { "atk": 0.90, "def": 1.25 },
+    "TSV Hartberg": { "atk": 1.00, "def": 1.20 },
+    "Wolfsberger AC": { "atk": 1.08, "def": 1.12 },
+    "WSG Tirol": { "atk": 0.92, "def": 1.30 }
+   }, 
+  "ARG": {
+     "Aldosivi": { "atk": 0.85, "def": 1.30 },
+     "Argentinos Juniors": { "atk": 1.05, "def": 0.95 },
+     "Atlético Tucumán": { "atk": 0.92, "def": 1.15 },
+     "Banfield": { "atk": 0.88, "def": 1.10 },
+     "Barracas Central": { "atk": 0.90, "def": 1.25 },
+     "Boca Juniors": { "atk": 1.25, "def": 0.82 },
+     "CA Independiente": { "atk": 1.08, "def": 0.90 },
+     "CA Lanús": { "atk": 1.12, "def": 0.98 },
+     "CA Talleres": { "atk": 1.20, "def": 0.88 },
+     "Central Córdoba": { "atk": 0.88, "def": 1.20 },
+     "Club Atlético Belgrano": { "atk": 1.00, "def": 1.12 },
+     "Club Atlético Platense": { "atk": 0.85, "def": 0.95 },
+     "Club Atlético Unión de Santa Fe": { "atk": 0.95, "def": 1.05 },
+     "Defensa y Justicia": { "atk": 1.10, "def": 1.15 },
+     "Deportivo Riestra": { "atk": 0.82, "def": 1.18 },
+     "Estudiantes de La Plata": { "atk": 1.18, "def": 0.85 },
+     "Estudiantes de Río Cuarto": { "atk": 0.80, "def": 1.30 },
+     "Gimnasia y Esgrima": { "atk": 0.92, "def": 1.15 },
+     "Gimnasia y Esgrima Mendoza": { "atk": 0.82, "def": 1.25 },
+     "Huracán": { "atk": 1.02, "def": 0.88 },
+     "Independiente Rivadavia": { "atk": 0.85, "def": 1.28 },
+     "Instituto De Córdoba": { "atk": 0.95, "def": 1.08 },
+     "Newell's Old Boys": { "atk": 0.90, "def": 1.05 },
+     "Racing Club": { "atk": 1.30, "def": 0.92 },
+     "River Plate": { "atk": 1.40, "def": 0.78 },
+     "Rosario Central": { "atk": 1.05, "def": 1.02 }
+   },
   "CPA": {
     "Alianza Valledupar FC": { "atk": 0.693, "def": 1.231 },
     "América de Cali": { "atk": 1.211, "def": 0.607 },
@@ -685,7 +729,7 @@ export const HOME_ADVANTAGE = {
   "DED": 1.08, "BSA": 1.12, "ELC": 1.07, "JPL": 1.07, "MXL": 1.06,
   "LIB": 1.10, "MLS": 1.11, "BSB": 1.10, "PPT": 1.06, "EKS": 1.05,
   "SPL": 1.08, "CDR": 1.07, "SPFL": 1.07, "SD2": 1.05, "UCL": 1.06, "UEL": 1.07,
-  "COPPAITALIA": 1.03, "CPA": 1.06
+  "COPPAITALIA": 1.03, "ABL": 1.08, "ARG": 1.12, "CPA": 1.06
 };
 
 export const DIXON_COLES_RHO = {
@@ -694,8 +738,8 @@ export const DIXON_COLES_RHO = {
   "JPL": -0.082, "MXL": -0.095, "LIB": -0.088, "MLS": -0.070,
   "BSB": -0.092, "PPT": -0.080, "EKS": -0.085,"SPL": -0.075, 
   "CDR": -0.050,"SPFL": -0.080, "SD2": -0.085, "UCL": -0.070,
-  "UEL": -0.078, "COPPAITALIA": -0.090,"CPA": -0.095,
-  "default": -0.13
+  "UEL": -0.078, "COPPAITALIA": -0.090, "ABL": -0.058 "ARG": -0.070 
+  "CPA": -0.095, "default": -0.13
 };
 
 export const PLATT_PARAMS = { goals15: { A: 0.951, B: -0.038 }, goals25: { A: 0.933, B: -0.055 }, btts: { A: 0.956, B: -0.034 }, corners: { A: 0.970, B: -0.022 }, goals_ht05: { A: 0.960, B: -0.030 }, goals_ht15: { A: 0.938, B: -0.048 }, resultado: { A: 0.918, B: -0.068 } };
@@ -734,5 +778,7 @@ export const BZZOIRO_COUNTRY = {
   ELITE: 'Norway',
   ALLSV: 'Sweden',
   SUI1: 'Switzerland',
+  ABL: 'Austria',
+  ARG: 'Argentina',
   CPA: 'Colombia'
 };
