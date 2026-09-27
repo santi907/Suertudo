@@ -29,6 +29,7 @@ export const LIGAS = {
   "UCL": { "name": "⭐ Champions League", "goalsAvg": 2.75, "cornAvg": 10.0, "cornR": 18, "markets": { "goles": false, "btts": true, "corn": true } },
   "UEL": { "name": "🟠 Europa League", "goalsAvg": 2.65, "cornAvg": 9.7, "cornR": 17, "markets": { "goles": false, "btts": true, "corn": false } },
   "SD2": { "name": "🇪🇸 Segunda División", "goalsAvg": 2.45, "cornAvg": 9.4, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": true } },
+  "CDR": { "name": "🇪🇸 Copa del Rey", "goalsAvg": 2.75, "cornAvg": 9.2, "cornR": 18, "markets": { "goles": true, "btts": true, "corn": true } },
   "NPLQLD": { "name": "🇦🇺 NPL Queensland (Australia)", "goalsAvg": 2.95, "cornAvg": 9.3, "cornR": 16, "markets": { "goles": true, "btts": true, "corn": false } },
   "ELITE": { "name": "🇳🇴 Eliteserien (Noruega)", "goalsAvg": 2.94, "cornAvg": 9.6, "cornR": 17, "markets": { "goles": true, "btts": true, "corn": false } },
   "ALLSV": { "name": "🇸🇪 Allsvenskan (Suecia)", "goalsAvg": 2.83, "cornAvg": 9.4, "cornR": 16, "markets": { "goles": false, "btts": true, "corn": false } },
@@ -569,6 +570,28 @@ export const TEAM_STRENGTH_DB = {
     "Sporting Gijón": { "atk": 1.03, "def": 0.98 },
     "UD Las Palmas": { "atk": 0.99, "def": 1.09 }
   },
+  "CDR": { 
+    "AE Prat": { "atk": 1.05, "def": 1.10 },
+    "Atlético Calatayud": { "atk": 0.92, "def": 1.25 },
+    "Atletico Melilla CF": { "atk": 0.75, "def": 1.65 },
+    "Atlético Unión Güímar": { "atk": 0.88, "def": 1.30 },
+    "Auriense CA": { "atk": 0.80, "def": 1.40 },
+    "CD 6 de Junio": { "atk": 0.70, "def": 1.70 },
+    "CD Anaitasuna FT": { "atk": 0.95, "def": 1.20 },
+    "CD Baztan": { "atk": 0.85, "def": 1.35 },
+    "C.D. San José": { "atk": 0.82, "def": 1.38 },
+    "CD Tedeon": { "atk": 0.80, "def": 1.45 },
+    "CF Sant Rafel": { "atk": 0.90, "def": 1.28 },                                                   
+    "CP Talayuela": { "atk": 0.78, "def": 1.50 },
+    "Noja SD": { "atk": 0.88, "def": 1.32 },
+    "Ribadesella CF": { "atk": 0.85, "def": 1.35 },
+    "Sporting de Alcazar CF": { "atk": 0.90, "def": 1.25 },
+    "Sporting Hortaleza": { "atk": 0.92, "def": 1.22 },
+    "UB Lebrijana": { "atk": 0.95, "def": 1.20 },
+    "UD Maracena": { "atk": 0.88, "def": 1.30 },
+    "UD Pinatar": { "atk": 0.85, "def": 1.35 },
+    "UE Tavernes": { "atk": 0.92, "def": 1.25 } 
+  },
   "NPLQLD": {
     "Brisbane City": { "atk": 1.02, "def": 1.04 },
     "Brisbane Roar Youth": { "atk": 1.10, "def": 1.15 },
@@ -661,8 +684,7 @@ export const HOME_ADVANTAGE = {
   "PL": 1.08, "BL1": 1.09, "SA": 1.04, "PD": 1.05, "FL1": 1.06,
   "DED": 1.08, "BSA": 1.12, "ELC": 1.07, "JPL": 1.07, "MXL": 1.06,
   "LIB": 1.10, "MLS": 1.11, "BSB": 1.10, "PPT": 1.06, "EKS": 1.05,
-  "SPL": 1.08,
-  "SPFL": 1.07, "SD2": 1.05, "UCL": 1.06, "UEL": 1.07,
+  "SPL": 1.08, "CDR": 1.07, "SPFL": 1.07, "SD2": 1.05, "UCL": 1.06, "UEL": 1.07,
   "COPPAITALIA": 1.03, "CPA": 1.06
 };
 
@@ -670,11 +692,9 @@ export const DIXON_COLES_RHO = {
   "PL": -0.065, "BL1": -0.085, "SA": -0.130, "PD": -0.098,
   "FL1": -0.105, "DED": -0.072, "BSA": -0.090, "ELC": -0.078,
   "JPL": -0.082, "MXL": -0.095, "LIB": -0.088, "MLS": -0.070,
-  "BSB": -0.092, "PPT": -0.080, "EKS": -0.085,
-  "SPL": -0.075,
-  "SPFL": -0.080, "SD2": -0.085, "UCL": -0.070,
-  "UEL": -0.078, "COPPAITALIA": -0.090,
-  "CPA": -0.095,
+  "BSB": -0.092, "PPT": -0.080, "EKS": -0.085,"SPL": -0.075, 
+  "CDR": -0.050,"SPFL": -0.080, "SD2": -0.085, "UCL": -0.070,
+  "UEL": -0.078, "COPPAITALIA": -0.090,"CPA": -0.095,
   "default": -0.13
 };
 
@@ -699,7 +719,7 @@ export const BZZOIRO_COUNTRY = {
   PL: 'England', ELC: 'England',
   BL1: 'Germany',
   SA: 'Italy', COPPAITALIA: 'Italy',
-  PD: 'Spain', SD2: 'Spain', COPADELREY: 'Spain',
+  PD: 'Spain', SD2: 'Spain', COPADELREY: 'Spain', CDR: 'Spain',
   FL1: 'France',
   DED: 'Netherlands',
   BSA: 'Brazil', BSB: 'Brazil',
