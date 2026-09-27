@@ -2,17 +2,23 @@ import { LIGAS, TEAM_STRENGTH_DB, HOME_ADVANTAGE, CORNER_HOME_BIAS, CORNER_HOME_
 import * as stats from './stats.js';
 import { fetchLeagueDynamicData, fetchMatchPrediction } from './api.js';
 
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hora de vigencia
 const dynamicCache = {};
 
 async function getDynamicData(leagueKey, leagueDisplayName) {
-  if (dynamicCache[leagueKey]) return dynamicCache[leagueKey];
+  const now = Date.now();
+  // Verifica si existe el caché y si no ha expirado
+  if (dynamicCache[leagueKey] && (now - dynamicCache[leagueKey].timestamp < CACHE_TTL_MS)) {
+    return dynamicCache[leagueKey].data;
+  }
   try {
     const data = await fetchLeagueDynamicData(leagueKey, leagueDisplayName);
-    dynamicCache[leagueKey] = data;
+    dynamicCache[leagueKey] = { data, timestamp: now };
     return data;
   } catch (e) {
     console.warn('Fallback a datos estáticos:', e.message);
-    return null;
+    // Si la API falla, intenta devolver el caché viejo si existe
+    return dynamicCache[leagueKey]?.data || null; 
   }
 }
 
@@ -30,14 +36,24 @@ export function getTeamsForLeague(leagueKey) {
 
 function getTeamRating(leagueKey, teamName, dynamicRatings) {
   if (dynamicRatings?.[teamName]) return dynamicRatings[teamName];
-  return getTeamsForLeague(leagueKey)[teamName] || { atk: 1.0, def: 1.0 };
+  
+  const rating = getTeamsForLeague(leagueKey)[teamName];
+  if (!rating) {
+      console.warn(`⚠️ ALERTA: Equipo "${teamName}" no encontrado. Usando rating por defecto 1.0`);
+  }
+  return rating || { atk: 1.0, def: 1.0 };
 }
 
 // Promedia nuestro modelo con el de Bzzoiro, pesando según la confianza que
 // Bzzoiro declara en su propia predicción (si no la manda, usa 50/50 llano)
 function blend(own, ml) {
   const w = typeof ml.confidence === 'number' ? Math.min(1, Math.max(0, ml.confidence)) : 0.5;
-  const mix = (ownVal, mlVal) => +((ownVal * (1 - w) + mlVal * w)).toFixed(1);
+  const mix = (ownVal, mlVal) => {
+    // Si Bzzoiro no manda el dato o manda NaN, usamos 100% nuestro cálculo
+    if (typeof mlVal !== 'number' || isNaN(mlVal)) return ownVal;
+    return +((ownVal * (1 - w) + mlVal * w)).toFixed(1);
+  };
+  
   return {
     resultProbs: {
       local: mix(own.resultProbs.local, ml.resultProbs.local),
