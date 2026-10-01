@@ -28,17 +28,20 @@ export function calcularTasasBase(partidos) {
   };
 }
 
-// Un paso de ajuste. Dada la tasa observada y la que el modelo está dando,
-// mueve el parámetro en la dirección correcta con damping para no oscilar.
+// Ajuste con damping. Dada la tasa real y la predicha (probabilidad media),
+// mueve homeAdv en la dirección correcta sin oscilar.
 export function ajustarHomeAdvantage(homeAdvActual, tasas, predHomeRate) {
   const ratio = (tasas.homeRate + 0.02) / (predHomeRate + 0.02);
   const ajuste = Math.pow(ratio, 0.35);
   return Math.max(1.0, Math.min(1.6, homeAdvActual * ajuste));
 }
 
+// Ajuste de rho con límites. El rango razonable de Dixon-Coles es [-0.25, +0.05];
+// valores fuera de eso generan distorsiones irreales en la distribución.
 export function ajustarRho(rhoActual, tasas, predDrawRate) {
   const diff = tasas.drawRate - predDrawRate;
-  return Math.max(-0.5, Math.min(0.5, rhoActual - diff * 0.6));
+  const nuevo = rhoActual - diff * 0.8;
+  return Math.max(-0.25, Math.min(0.05, nuevo));
 }
 
 // Mezcla las probabilidades del modelo con las tasas base de la liga.
