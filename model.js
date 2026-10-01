@@ -2,12 +2,11 @@ import { LIGAS, TEAM_STRENGTH_DB, HOME_ADVANTAGE, CORNER_HOME_BIAS, CORNER_HOME_
 import * as stats from './stats.js';
 import { fetchLeagueDynamicData, fetchMatchPrediction } from './api.js';
 
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hora de vigencia
+const CACHE_TTL_MS = 60 * 60 * 1000;
 const dynamicCache = {};
 
 async function getDynamicData(leagueKey, leagueDisplayName) {
   const now = Date.now();
-  // Verifica si existe el caché y si no ha expirado
   if (dynamicCache[leagueKey] && (now - dynamicCache[leagueKey].timestamp < CACHE_TTL_MS)) {
     return dynamicCache[leagueKey].data;
   }
@@ -17,12 +16,10 @@ async function getDynamicData(leagueKey, leagueDisplayName) {
     return data;
   } catch (e) {
     console.warn('Fallback a datos estáticos:', e.message);
-    // Si la API falla, intenta devolver el caché viejo si existe
     return dynamicCache[leagueKey]?.data || null; 
   }
 }
 
-// Fusiona equipos de sub-ligas si la liga es "compuesta" (ej. Copa del Rey = PD + SD2)
 export function getTeamsForLeague(leagueKey) {
   const liga = LIGAS[leagueKey];
   if (liga?.compositeOf) {
@@ -36,7 +33,6 @@ export function getTeamsForLeague(leagueKey) {
 
 function getTeamRating(leagueKey, teamName, dynamicRatings) {
   if (dynamicRatings?.[teamName]) return dynamicRatings[teamName];
-  
   const rating = getTeamsForLeague(leagueKey)[teamName];
   if (!rating) {
       console.warn(`⚠️ ALERTA: Equipo "${teamName}" no encontrado. Usando rating por defecto 1.0`);
@@ -44,16 +40,12 @@ function getTeamRating(leagueKey, teamName, dynamicRatings) {
   return rating || { atk: 1.0, def: 1.0 };
 }
 
-// Promedia nuestro modelo con el de Bzzoiro, pesando según la confianza que
-// Bzzoiro declara en su propia predicción (si no la manda, usa 50/50 llano)
 function blend(own, ml) {
   const w = typeof ml.confidence === 'number' ? Math.min(1, Math.max(0, ml.confidence)) : 0.5;
   const mix = (ownVal, mlVal) => {
-    // Si Bzzoiro no manda el dato o manda NaN, usamos 100% nuestro cálculo
     if (typeof mlVal !== 'number' || isNaN(mlVal)) return ownVal;
     return +((ownVal * (1 - w) + mlVal * w)).toFixed(1);
   };
-  
   return {
     resultProbs: {
       local: mix(own.resultProbs.local, ml.resultProbs.local),
@@ -66,7 +58,10 @@ function blend(own, ml) {
   };
 }
 
-export async function simulateMatch(leagueKey, homeTeam, awayTeam, { staticOnly = false } = {}) {
+export async function simulateMatch(leagueKey, homeTeam, awayTeam, {
+  staticOnly = false,
+  calibracion = null,
+} = {}) {
   const liga = LIGAS[leagueKey];
   if (!liga) throw new Error('Liga no encontrada');
 
@@ -77,22 +72,21 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam, { staticOnly 
   const hRating = getTeamRating(leagueKey, homeTeam, dynamic?.teamRatings);
   const aRating = getTeamRating(leagueKey, awayTeam, dynamic?.teamRatings);
 
-  // goalsAvg guardado en leagues.js es el promedio TOTAL de goles del
-  // partido (ambos equipos combinados) — por eso se reparte /2 entre cada
-  // equipo antes de aplicar su rating de ataque/defensa. Usar goalsAvg
-  // completo para cada equipo duplicaba los goles esperados del partido.
-  const homeAdv = HOME_ADVANTAGE[leagueKey] || 1.0;
+  // Calibración: si llega un objeto con homeAdvantage y/o rho, se usan esos
+  // valores en vez de los de leagues.js. Esto permite que el backtest
+  // (o cualquier llamador) imponga parámetros derivados del historial real.
+  const homeAdv = calibracion?.homeAdvantage ?? HOME_ADVANTAGE[leagueKey] ?? 1.0;
+  const rho = calibracion?.rho; // undefined = usar el de leagues.js
+
   const avgPerTeam = goalsAvg / 2;
   const lambdaHome = avgPerTeam * hRating.atk * aRating.def * homeAdv;
   const lambdaAway = avgPerTeam * aRating.atk * hRating.def;
 
-  const resultProbs = stats.calcResultProbs(lambdaHome, lambdaAway, leagueKey);
-
-  const over15 = stats.over15DC(lambdaHome, lambdaAway, leagueKey);
+  const resultProbs = stats.calcResultProbs(lambdaHome, lambdaAway, leagueKey, rho);
+  const over15 = stats.over15DC(lambdaHome, lambdaAway, leagueKey, rho);
   const over25 = stats.poissonOver(lambdaHome + lambdaAway, 2.5);
   const over35 = stats.poissonOver(lambdaHome + lambdaAway, 3.5);
-
-  const btts = stats.calcBTTS(lambdaHome, lambdaAway, leagueKey);
+  const btts = stats.calcBTTS(lambdaHome, lambdaAway, leagueKey, rho);
 
   let cornerProbs = null;
   if (cornAvg && cornAvg > 0) {
@@ -109,8 +103,6 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam, { staticOnly 
       porEquipo: {
         local: {
           esperado: lCornerHome,
-          // Usa el mismo "r" de la liga aplicado a la porción de cada equipo
-          // (aproximación: no hay un dato real de dispersión por equipo)
           over3: stats.negBinOver(lCornerHome, 3.5, r),
           over4: stats.negBinOver(lCornerHome, 4.5, r),
         },
@@ -126,8 +118,6 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam, { staticOnly 
   const calLocal = stats.plattCalibrate(resultProbs.home, 'resultado');
   const calEmpate = stats.plattCalibrate(resultProbs.draw, 'resultado');
   const calVisitante = stats.plattCalibrate(resultProbs.away, 'resultado');
-  // Cada probabilidad se calibra por separado, así que ya no suman
-  // exactamente 100 — se renormaliza manteniendo las proporciones.
   const sumaCal = calLocal + calEmpate + calVisitante;
 
   const ownResult = {
@@ -146,9 +136,6 @@ export async function simulateMatch(leagueKey, homeTeam, awayTeam, { staticOnly 
     cornerProbs
   };
 
-  // Intento traer la predicción ML de Bzzoiro para el mismo partido, si hay
-  // token y la liga se pudo resolver. Es 100% opcional: si falla o no
-  // encuentra el partido, se devuelve el resultado propio sin cambios.
   let bzzoiroML = null;
   if (dynamic?.bzzoiroLeagueId) {
     const pred = await fetchMatchPrediction(dynamic.bzzoiroLeagueId, homeTeam, awayTeam);
