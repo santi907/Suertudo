@@ -31,12 +31,8 @@ export function poissonOver(lambda, th) {
     return Math.min(98, Math.max(2, (1 - poissonProb(lambda, Math.floor(th))) * 100)); 
 }
 
-// Over 1.5 usando las mismas celdas ajustadas por Dixon-Coles que ya usan
-// calcResultProbs y calcBTTS (antes se calculaba con Poisson independiente,
-// inconsistente con el resto). Over 2.5 y 3.5 no cambian con este ajuste
-// -verificado numéricamente- así que esos siguen usando poissonOver normal.
-export function over15DC(lH, lA, leagueKey) {
-    const rho = DIXON_COLES_RHO[leagueKey] || DIXON_COLES_RHO.default;
+export function over15DC(lH, lA, leagueKey, rhoOverride) {
+    const rho = rhoOverride ?? DIXON_COLES_RHO[leagueKey] ?? DIXON_COLES_RHO.default;
     const p00 = poissonExact(lH, 0) * poissonExact(lA, 0) * dixonColesTau(0, 0, lH, lA, rho);
     const p10 = poissonExact(lH, 1) * poissonExact(lA, 0) * dixonColesTau(1, 0, lH, lA, rho);
     const p01 = poissonExact(lH, 0) * poissonExact(lA, 1) * dixonColesTau(0, 1, lH, lA, rho);
@@ -70,8 +66,8 @@ export function dixonColesTau(x, y, lH, lA, rho) {
     return 1; 
 }
 
-export function calcBTTS(lH, lA, leagueKey) { 
-    const rho = DIXON_COLES_RHO[leagueKey] || DIXON_COLES_RHO.default; 
+export function calcBTTS(lH, lA, leagueKey, rhoOverride) { 
+    const rho = rhoOverride ?? DIXON_COLES_RHO[leagueKey] ?? DIXON_COLES_RHO.default; 
     const p00 = poissonExact(lH, 0) * poissonExact(lA, 0) * dixonColesTau(0, 0, lH, lA, rho);
     const pHome0 = poissonExact(lH, 0);
     const pAway0 = poissonExact(lA, 0);
@@ -79,8 +75,8 @@ export function calcBTTS(lH, lA, leagueKey) {
     return Math.min(98, Math.max(2, btts * 100)); 
 }
 
-export function calcResultProbs(lH, lA, leagueKey) { 
-    const rho = DIXON_COLES_RHO[leagueKey] || DIXON_COLES_RHO.default; 
+export function calcResultProbs(lH, lA, leagueKey, rhoOverride) { 
+    const rho = rhoOverride ?? DIXON_COLES_RHO[leagueKey] ?? DIXON_COLES_RHO.default; 
     let pH = 0, pD = 0, pA = 0, total = 0; 
     for (let h = 0; h <= 10; h++) { 
         for (let a = 0; a <= 10; a++) { 
@@ -106,11 +102,6 @@ export function normalizeCornersAvg(v) {
 }
 
 export function splitCornerLambda(totalCorners, homeAtk, homeDef, awayAtk, awayDef, homeBias) {
-    // homeBias representa el reparto real local/visitante: con homeBias=1.66,
-    // el local se queda con 1.66/(1.66+1) = 62.4% del total (medido de datos
-    // reales). Con equipos promedio (factor=1 en ambos) la suma da exactamente
-    // totalCorners — antes el bias solo inflaba al local sin tocar al
-    // visitante, lo que aumentaba el total en vez de solo repartirlo.
     const homeShareBase = homeBias / (homeBias + 1);
     const homeFactor = (homeAtk + awayDef) / 2;
     const awayFactor = (awayAtk + homeDef) / 2;
