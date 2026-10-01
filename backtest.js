@@ -71,7 +71,7 @@ function log(msg) {
   logDiv.scrollTop = logDiv.scrollHeight;
 }
 
-// ============ MÉTRICAS (Brier, calibración, comparación) ============
+// ============ MÉTRICAS ============
 class MarketStats {
   constructor(name) {
     this.name = name;
@@ -120,7 +120,7 @@ async function calibrarLiga(leagueKey, partidos) {
   let rho = DIXON_COLES_RHO[leagueKey] ?? DIXON_COLES_RHO.default ?? -0.1;
   const historial = [];
 
-  // Muestrear partidos distribuidos a lo largo del historial
+  // Muestreo distribuido a lo largo del historial
   const muestra = [];
   const step = Math.max(1, Math.floor(partidos.length / CAL_MUESTRA));
   for (let i = 0; i < partidos.length && muestra.length < CAL_MUESTRA; i += step) {
@@ -130,7 +130,8 @@ async function calibrarLiga(leagueKey, partidos) {
   }
 
   for (let iter = 0; iter < CAL_ITERACIONES; iter++) {
-    let predL = 0, predE = 0, predV = 0, n = 0;
+    // Medimos PROMEDIO de probabilidades (continuo, estable), no argmax
+    let sumL = 0, sumE = 0, sumV = 0, n = 0;
     for (const p of muestra) {
       try {
         const pred = await simulateMatch(leagueKey, p.local, p.visitante, {
@@ -138,19 +139,20 @@ async function calibrarLiga(leagueKey, partidos) {
           calibracion: { homeAdvantage: homeAdv, rho }
         });
         const rp = pred.resultProbs;
-        const max = Math.max(rp.local, rp.empate, rp.visitante);
-        if (rp.local === max) predL++;
-        else if (rp.empate === max) predE++;
-        else predV++;
+        sumL += rp.local;
+        sumE += rp.empate;
+        sumV += rp.visitante;
         n++;
       } catch (e) { /* skip */ }
     }
     if (n === 0) break;
 
-    const predHomeRate = predL / n;
-    const predDrawRate = predE / n;
-    const predAwayRate = predV / n;
-    const err = Math.abs(tasas.homeRate - predHomeRate) + Math.abs(tasas.drawRate - predDrawRate) + Math.abs(tasas.awayRate - predAwayRate);
+    const predHomeRate = sumL / n / 100;
+    const predDrawRate = sumE / n / 100;
+    const predAwayRate = sumV / n / 100;
+    const err = Math.abs(tasas.homeRate - predHomeRate)
+              + Math.abs(tasas.drawRate - predDrawRate)
+              + Math.abs(tasas.awayRate - predAwayRate);
 
     historial.push({
       iter: iter + 1,
@@ -159,10 +161,10 @@ async function calibrarLiga(leagueKey, partidos) {
       err
     });
 
-    log(`   [iter ${iter + 1}] homeAdv=${homeAdv.toFixed(3)} rho=${rho.toFixed(3)} → pred L:${fmt(predHomeRate*100)}% E:${fmt(predDrawRate*100)}% V:${fmt(predAwayRate*100)}% (err ${fmt(err*100)}%)`);
+    log(`   [iter ${iter + 1}] homeAdv=${homeAdv.toFixed(3)} rho=${rho.toFixed(3)} → prob media L:${fmt(predHomeRate*100)}% E:${fmt(predDrawRate*100)}% V:${fmt(predAwayRate*100)}% (err ${fmt(err*100)}%)`);
 
-    if (err < 0.01) {
-      log(`   ✓ Convergió (error < 1%)`);
+    if (err < 0.02) {
+      log(`   ✓ Convergió (error < 2%)`);
       break;
     }
 
@@ -188,38 +190,38 @@ function renderCalibracion(resultado) {
   }
 
   const ultimo = historial[historial.length - 1];
-  const fila = (label, real, pred, color) => `
-    <div class="compare-row">
-      <span>${label}</span>
-      <span class="grid-plain">real ${fmt(real*100)}%</span>
-      <span class="grid-plain" style="color:${color}">pred ${fmt(pred*100)}%</span>
-    </div>`;
-
-  const colorErr = (real, pred) => {
+  const fila = (label, real, pred) => {
     const d = Math.abs(real - pred);
-    if (d < 0.03) return 'var(--green)';
-    if (d < 0.06) return 'var(--yellow)';
-    return 'var(--red)';
+    const color = d < 0.03 ? 'var(--green)' : d < 0.06 ? 'var(--yellow)' : 'var(--red)';
+    return `
+      <div class="compare-row">
+        <span>${label}</span>
+        <span class="grid-plain">real ${fmt(real*100)}%</span>
+        <span class="grid-plain" style="color:${color}">pred ${fmt(pred*100)}%</span>
+      </div>`;
   };
+
+  const originalHA = HOME_ADVANTAGE[resultado.leagueKey] ?? HOME_ADVANTAGE['PL'];
+  const originalRho = DIXON_COLES_RHO[resultado.leagueKey] ?? DIXON_COLES_RHO.default;
 
   calibrationContent.innerHTML = `
     <div class="card">
       <h3>Parámetros derivados <small>(auto)</small></h3>
       <div class="compare-row">
         <span>HOME_ADVANTAGE</span>
-        <span class="grid-plain">${(HOME_ADVANTAGE[historial[0] ? 'PL' : 'PL'] || 1.05).toFixed(3)} original</span>
+        <span class="grid-plain">${(originalHA ?? 1.05).toFixed(3)} original</span>
         <span class="prob" style="color:var(--green)">${calibracion.homeAdvantage.toFixed(3)}</span>
       </div>
       <div class="compare-row">
         <span>DIXON_COLES_RHO</span>
-        <span class="grid-plain">${(DIXON_COLES_RHO[historial[0] ? 'PL' : 'PL'] || -0.1).toFixed(3)} original</span>
+        <span class="grid-plain">${(originalRho ?? -0.1).toFixed(3)} original</span>
         <span class="prob" style="color:var(--green)">${calibracion.rho.toFixed(3)}</span>
       </div>
       <h3 class="corner-team-title">Distribución: real vs predicha (calibrada)</h3>
       <div class="compare-row compare-head"><span>Resultado</span><span>Real</span><span>Modelo</span></div>
-      ${fila('Local gana', tasas.homeRate, ultimo.predHome, colorErr(tasas.homeRate, ultimo.predHome))}
-      ${fila('Empate', tasas.drawRate, ultimo.predDraw, colorErr(tasas.drawRate, ultimo.predDraw))}
-      ${fila('Visitante gana', tasas.awayRate, ultimo.predAway, colorErr(tasas.awayRate, ultimo.predAway))}
+      ${fila('Local gana', tasas.homeRate, ultimo.predHome)}
+      ${fila('Empate', tasas.drawRate, ultimo.predDraw)}
+      ${fila('Visitante gana', tasas.awayRate, ultimo.predAway)}
       <p style="margin:10px 0 0; font-size:0.8rem; color:var(--chalk-dim)">
         Error total: ${fmt(ultimo.err * 100)}% — ${historial.length} iteraciones.
         ${SHRINK_ALPHA > 0 ? `Shrinkage activo (α=${SHRINK_ALPHA}).` : ''}
@@ -242,6 +244,7 @@ runBtn.addEventListener('click', async () => {
 
   // === 1. Calibración automática ===
   const calResult = await calibrarLiga(leagueKey, partidos);
+  calResult.leagueKey = leagueKey;
   const calibracion = calResult.calibracion;
   const tasas = calResult.tasas;
   calibracionUsada = calibracion;
@@ -302,7 +305,7 @@ runBtn.addEventListener('click', async () => {
       continue;
     }
 
-    // Aplicar shrinkage hacia la tasa base (suave, para no perder señal)
+    // Aplicar shrinkage hacia la tasa base
     const resultProbsFinal = SHRINK_ALPHA > 0
       ? shrinkHaciaBase(pred.resultProbs, tasas, SHRINK_ALPHA)
       : pred.resultProbs;
