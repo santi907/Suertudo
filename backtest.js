@@ -112,7 +112,7 @@ async function calibrarLiga(leagueKey, partidos) {
     return { calibracion: null, tasas, historial: [] };
   }
 
-  log(`\n🎯 Calibrando liga (${tasas.n} partidos)...`);
+  log(`\n🎯 Calibrando liga (${tasas.n} partidos)... [v2]`);
   log(`   Tasa real: local ${fmt(tasas.homeRate*100)}% · empate ${fmt(tasas.drawRate*100)}% · visitante ${fmt(tasas.awayRate*100)}%`);
   log(`   Goles promedio: ${fmt(tasas.goalsAvg)} · Córners: ${fmt(tasas.cornAvg)}`);
 
