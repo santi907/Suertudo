@@ -22,11 +22,8 @@ const logSection = document.getElementById('log-section');
 const logDiv = document.getElementById('log');
 const resultsSection = document.getElementById('results');
 const resultsContent = document.getElementById('results-content');
-const exportSection = document.getElementById('export-section');
-const exportBtn = document.getElementById('export-btn');
 
 let historial = null;
-let filasComparacion = []; // se llena en cada corrida del backtest
 
 fileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
@@ -107,8 +104,6 @@ runBtn.addEventListener('click', async () => {
   runBtn.disabled = true;
   logDiv.textContent = '';
   resultsSection.style.display = 'none';
-  exportSection.style.display = 'none';
-  filasComparacion = [];
 
   const leagueKey = historial.leagueKey;
   const partidos = historial.partidos;
@@ -209,54 +204,6 @@ runBtn.addEventListener('click', async () => {
       markets.cornersVisit35.add(pred.cornerProbs.porEquipo?.visitante?.over3, p.corners_visitante > 3.5);
     }
 
-    // Guardamos la fila completa APP vs REAL vs CASA para exportar a CSV.
-    filasComparacion.push({
-      fecha: p.fecha ?? '',
-      local: p.local,
-      visitante: p.visitante,
-      app: {
-        local: pred.resultProbs.local,
-        empate: pred.resultProbs.empate,
-        visitante: pred.resultProbs.visitante,
-        over15: pred.over15,
-        over25: pred.over25,
-        over35: pred.over35,
-        btts: pred.btts,
-        corners_over75: pred.cornerProbs?.over7 ?? null,
-        corners_over85: pred.cornerProbs?.over8 ?? null,
-        corners_over95: pred.cornerProbs?.over9 ?? null,
-        corners_local_over35: pred.cornerProbs?.porEquipo?.local?.over3 ?? null,
-        corners_visit_over35: pred.cornerProbs?.porEquipo?.visitante?.over3 ?? null,
-      },
-      real: {
-        goles_local: p.goles_local,
-        goles_visitante: p.goles_visitante,
-        total_goles: totalGoles,
-        resultado,
-        over15: totalGoles > 1.5 ? 1 : 0,
-        over25: totalGoles > 2.5 ? 1 : 0,
-        over35: totalGoles > 3.5 ? 1 : 0,
-        btts: (p.goles_local > 0 && p.goles_visitante > 0) ? 1 : 0,
-        corners_local: p.corners_local ?? null,
-        corners_visitante: p.corners_visitante ?? null,
-        corners_total: (p.corners_local != null && p.corners_visitante != null)
-          ? p.corners_local + p.corners_visitante : null,
-      },
-      casa: {
-        odds_local: p.odds_local ?? null,
-        odds_empate: p.odds_empate ?? null,
-        odds_visitante: p.odds_visitante ?? null,
-        odds_over15: p.odds_over15 ?? null,
-        odds_under15: p.odds_under15 ?? null,
-        odds_over25: p.odds_over25 ?? null,
-        odds_under25: p.odds_under25 ?? null,
-        odds_over35: p.odds_over35 ?? null,
-        odds_under35: p.odds_under35 ?? null,
-        odds_btts_si: p.odds_btts_si ?? null,
-        odds_btts_no: p.odds_btts_no ?? null,
-      },
-    });
-
     evaluados++;
     if (evaluados % 10 === 0) log(`  ${evaluados}/${partidos.length}...`);
   }
@@ -272,8 +219,6 @@ runBtn.addEventListener('click', async () => {
     mercadoResumen,
     modeloVsMercadoResumen
   );
-
-  exportSection.style.display = filasComparacion.length ? 'block' : 'none';
   runBtn.disabled = false;
 });
 
@@ -359,76 +304,3 @@ function renderResults(summaries, mercadoResumen = {}, modeloVsMercadoResumen = 
 
   resultsSection.style.display = 'block';
 }
-
-// ---------- Exportar comparación APP vs REAL vs CASA ----------
-function exportarComparacionCSV(filas) {
-  if (!filas.length) { alert('No hay partidos para exportar.'); return; }
-
-  const headers = [
-    'fecha', 'local', 'visitante',
-    'APP_local', 'APP_empate', 'APP_visitante',
-    'APP_over15', 'APP_over25', 'APP_over35', 'APP_btts',
-    'APP_corners_over75', 'APP_corners_over85', 'APP_corners_over95',
-    'APP_corners_local_over35', 'APP_corners_visit_over35',
-    'REAL_goles_local', 'REAL_goles_visitante', 'REAL_total_goles', 'REAL_resultado',
-    'REAL_over15', 'REAL_over25', 'REAL_over35', 'REAL_btts',
-    'REAL_corners_local', 'REAL_corners_visitante', 'REAL_corners_total',
-    'CASA_odds_local', 'CASA_odds_empate', 'CASA_odds_visitante',
-    'CASA_fair_local', 'CASA_fair_empate', 'CASA_fair_visitante',
-    'CASA_odds_over15', 'CASA_odds_under15', 'CASA_fair_over15',
-    'CASA_odds_over25', 'CASA_odds_under25', 'CASA_fair_over25',
-    'CASA_odds_over35', 'CASA_odds_under35', 'CASA_fair_over35',
-    'CASA_odds_btts_si', 'CASA_odds_btts_no', 'CASA_fair_btts_si',
-  ];
-
-  const escapar = (v) => {
-    if (v === null || v === undefined) return '';
-    const s = String(v);
-    return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const num = (v) => (v == null || !Number.isFinite(v)) ? '' : Number(v).toFixed(2);
-
-  const lineas = [headers.join(',')];
-
-  for (const f of filas) {
-    const dev3 = devigar3(f.casa.odds_local, f.casa.odds_empate, f.casa.odds_visitante);
-    const fairL = dev3 ? dev3[0] : null;
-    const fairE = dev3 ? dev3[1] : null;
-    const fairV = dev3 ? dev3[2] : null;
-    const fairO15 = devigar2(f.casa.odds_over15, f.casa.odds_under15);
-    const fairO25 = devigar2(f.casa.odds_over25, f.casa.odds_under25);
-    const fairO35 = devigar2(f.casa.odds_over35, f.casa.odds_under35);
-    const fairBttsSi = devigar2(f.casa.odds_btts_si, f.casa.odds_btts_no);
-
-    lineas.push([
-      f.fecha, f.local, f.visitante,
-      num(f.app.local), num(f.app.empate), num(f.app.visitante),
-      num(f.app.over15), num(f.app.over25), num(f.app.over35), num(f.app.btts),
-      num(f.app.corners_over75), num(f.app.corners_over85), num(f.app.corners_over95),
-      num(f.app.corners_local_over35), num(f.app.corners_visit_over35),
-      f.real.goles_local, f.real.goles_visitante, f.real.total_goles, f.real.resultado,
-      f.real.over15, f.real.over25, f.real.over35, f.real.btts,
-      f.real.corners_local ?? '', f.real.corners_visitante ?? '', f.real.corners_total ?? '',
-      f.casa.odds_local ?? '', f.casa.odds_empate ?? '', f.casa.odds_visitante ?? '',
-      num(fairL), num(fairE), num(fairV),
-      f.casa.odds_over15 ?? '', f.casa.odds_under15 ?? '', num(fairO15),
-      f.casa.odds_over25 ?? '', f.casa.odds_under25 ?? '', num(fairO25),
-      f.casa.odds_over35 ?? '', f.casa.odds_under35 ?? '', num(fairO35),
-      f.casa.odds_btts_si ?? '', f.casa.odds_btts_no ?? '', num(fairBttsSi),
-    ].map(escapar).join(','));
-  }
-
-  const csv = '\uFEFF' + lineas.join('\n'); // BOM: Excel respeta tildes y ñ
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const ligaSlug = String(historial?.liga || historial?.leagueKey || 'backtest').replace(/\s+/g, '_');
-  a.download = `comparacion_${ligaSlug}_${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-exportBtn.addEventListener('click', () => exportarComparacionCSV(filasComparacion));
