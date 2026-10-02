@@ -1,6 +1,35 @@
 import { LIGAS } from './leagues.js';
 import { simulateMatch, getTeamsForLeague } from './model.js';
 
+// ============================================================================
+// PERSISTENCIA DE ESTADO
+// ============================================================================
+const ESTADO_KEY = 'vv_estado_seleccion';
+
+function guardarEstado(leagueKey, homeTeam, awayTeam) {
+  try {
+    localStorage.setItem(ESTADO_KEY, JSON.stringify({
+      liga: leagueKey, local: homeTeam, visitante: awayTeam
+    }));
+  } catch (e) { /* localStorage puede fallar en modo privado */ }
+}
+
+function leerEstado() {
+  try {
+    const raw = localStorage.getItem(ESTADO_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+// ============================================================================
+// UMBRALES DE PICKS
+// Mismos valores que usa el backtest. Ajustá acá si querés subir/bajar.
+// ============================================================================
+const UMBRAL_1X2 = 45;       // favorito ≥ 45% → pick
+const UMBRAL_GOLES = 60;     // Over X.5 ≥ 60% → pick (solo la más alta)
+const UMBRAL_BTTS = 60;      // BTTS Sí ≥ 60% → pick
+const UMBRAL_CORNERS = 60;   // Córners ≥ 60% → pick
+
 document.addEventListener('DOMContentLoaded', () => {
   const apiKeyInput = document.getElementById('api-key');
   const saveApiKeyBtn = document.getElementById('save-api-key');
@@ -46,7 +75,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function populateTeams(leagueKey) {
+  function populateTeams(leagueKey, { keepSelection = false } = {}) {
+    const prevHome = keepSelection ? homeSelect.value : null;
+    const prevAway = keepSelection ? awaySelect.value : null;
+
     homeSelect.innerHTML = '';
     awaySelect.innerHTML = '';
 
@@ -63,12 +95,56 @@ document.addEventListener('DOMContentLoaded', () => {
       awaySelect.appendChild(new Option(name, name));
     }
 
-    homeSelect.selectedIndex = 0;
-    awaySelect.selectedIndex = Math.min(1, teamNames.length - 1);
+    let homeIndex = 0;
+    let awayIndex = Math.min(1, teamNames.length - 1);
+
+    if (prevHome && teamNames.includes(prevHome)) {
+      homeIndex = teamNames.indexOf(prevHome);
+    }
+    if (prevAway && teamNames.includes(prevAway) && prevAway !== teamNames[homeIndex]) {
+      awayIndex = teamNames.indexOf(prevAway);
+    } else if (teamNames[homeIndex] === teamNames[awayIndex]) {
+      awayIndex = (homeIndex + 1) % teamNames.length;
+    }
+
+    homeSelect.selectedIndex = homeIndex;
+    awaySelect.selectedIndex = awayIndex;
+  }
+
+  function restaurarEstado() {
+    const estado = leerEstado();
+
+    if (estado?.liga && LIGAS[estado.liga]) {
+      leagueSelect.value = estado.liga;
+      populateTeams(estado.liga);
+
+      const teamNames = Object.keys(getTeamsForLeague(estado.liga));
+      if (estado.local && teamNames.includes(estado.local)) {
+        homeSelect.value = estado.local;
+      }
+      if (estado.visitante && teamNames.includes(estado.visitante) && estado.visitante !== homeSelect.value) {
+        awaySelect.value = estado.visitante;
+      }
+    } else {
+      const firstLeague = Object.keys(LIGAS)[0];
+      if (firstLeague) {
+        leagueSelect.value = firstLeague;
+        populateTeams(firstLeague);
+      }
+    }
   }
 
   leagueSelect.addEventListener('change', (e) => {
     populateTeams(e.target.value);
+    guardarEstado(e.target.value, homeSelect.value, awaySelect.value);
+  });
+
+  homeSelect.addEventListener('change', () => {
+    guardarEstado(leagueSelect.value, homeSelect.value, awaySelect.value);
+  });
+
+  awaySelect.addEventListener('change', () => {
+    guardarEstado(leagueSelect.value, homeSelect.value, awaySelect.value);
   });
 
   simulateBtn.addEventListener('click', async () => {
@@ -81,6 +157,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    guardarEstado(leagueKey, homeTeam, awayTeam);
+
     simulateBtn.disabled = true;
     simulateBtn.textContent = 'Calculando...';
 
@@ -92,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('❌ Error en simulación', err);
     } finally {
       simulateBtn.disabled = false;
-      simulateBtn.textContent = 'Simular';
+      simulateBtn.textContent = 'Simular partido';
     }
   });
 
@@ -100,7 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return Number(n).toFixed(1);
   }
 
-  // Fila completa: etiqueta + valor + barra semáforo (color y largo según prob.)
   function fila(label, prob) {
     const color = getColor(prob);
     const pct = Math.max(0, Math.min(100, prob));
@@ -111,11 +188,115 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
   }
 
-  // Versión compacta para las tablas de 4 columnas (valor arriba, barra fina abajo)
   function gridProb(val) {
     const color = getColor(val);
     const pct = Math.max(0, Math.min(100, val));
     return `<span class="grid-prob"><span class="grid-prob-value" style="color:${color}">${fmt(val)}%</span><span class="grid-prob-bar"><span style="width:${pct}%;background:${color}"></span></span></span>`;
+  }
+
+  function getColor(prob) {
+    if (prob >= 65) return 'var(--green)';
+    if (prob >= 42) return 'var(--yellow)';
+    return 'var(--red)';
+  }
+
+  // ==========================================================================
+  // GENERADOR DE PICKS
+  // Aplica los mismos umbrales que el backtest.
+  // Devuelve array de { label, prob, color }
+  // ==========================================================================
+  function generarPicks(data) {
+    const picks = [];
+
+    // --- 1X2 ---
+    const rp = data.resultProbs;
+    const max1x2 = Math.max(rp.local, rp.empate, rp.visitante);
+    if (max1x2 >= UMBRAL_1X2) {
+      if (rp.local === max1x2) picks.push({ label: 'Local gana', prob: rp.local });
+      else if (rp.empate === max1x2) picks.push({ label: 'Empate', prob: rp.empate });
+      else picks.push({ label: 'Visitante gana', prob: rp.visitante });
+    }
+
+    // --- Goles: la línea más alta que supere el umbral ---
+    const lineasGoles = [
+      { label: 'Over 3.5 goles', prob: data.over35 },
+      { label: 'Over 2.5 goles', prob: data.over25 },
+      { label: 'Over 1.5 goles', prob: data.over15 },
+    ];
+    for (const l of lineasGoles) {
+      if (l.prob != null && l.prob >= UMBRAL_GOLES) {
+        picks.push(l);
+        break;
+      }
+    }
+
+    // --- BTTS Sí ---
+    if (data.btts != null && data.btts >= UMBRAL_BTTS) {
+      picks.push({ label: 'Ambos marcan (Sí)', prob: data.btts });
+    }
+
+    // --- Córners totales: la línea más alta que supere el umbral ---
+    if (data.cornerProbs) {
+      const lineasCorners = [
+        { label: 'Over 9.5 córners', prob: data.cornerProbs.over9 },
+        { label: 'Over 8.5 córners', prob: data.cornerProbs.over8 },
+        { label: 'Over 7.5 córners', prob: data.cornerProbs.over7 },
+      ];
+      for (const l of lineasCorners) {
+        if (l.prob != null && l.prob >= UMBRAL_CORNERS) {
+          picks.push(l);
+          break;
+        }
+      }
+    }
+
+    // --- Córners por equipo ---
+    if (data.cornerProbs?.porEquipo) {
+      const cL = data.cornerProbs.porEquipo.local?.over3;
+      const cV = data.cornerProbs.porEquipo.visitante?.over3;
+      if (cL != null && cL >= UMBRAL_CORNERS) {
+        picks.push({ label: `Córners ${data.homeTeam} Over 3.5`, prob: cL });
+      }
+      if (cV != null && cV >= UMBRAL_CORNERS) {
+        picks.push({ label: `Córners ${data.awayTeam} Over 3.5`, prob: cV });
+      }
+    }
+
+    return picks;
+  }
+
+  function renderPicksCard(data) {
+    const picks = generarPicks(data);
+    const umbrales = `Umbrales: 1X2 ≥${UMBRAL_1X2}% · Goles ≥${UMBRAL_GOLES}% · BTTS ≥${UMBRAL_BTTS}% · Córners ≥${UMBRAL_CORNERS}%`;
+
+    if (picks.length === 0) {
+      return `
+        <div class="card" style="border:2px solid var(--line); opacity:0.8;">
+          <h3>🎯 Mejores picks para este partido</h3>
+          <p style="color:var(--chalk-dim); margin:8px 0 0; font-size:0.9rem;">
+            Sin picks recomendados. Ningún mercado supera los umbrales configurados.
+          </p>
+          <p style="color:var(--chalk-dim); margin:6px 0 0; font-size:0.72rem;">${umbrales}</p>
+        </div>`;
+    }
+
+    const filas = picks.map(p => `
+      <div class="prob-row">
+        <div class="prob-row-top">
+          <span>✅ ${p.label}</span>
+          <span class="prob" style="color:${getColor(p.prob)}">${fmt(p.prob)}%</span>
+        </div>
+        <div class="semaforo-track">
+          <div class="semaforo-fill" style="width:${p.prob}%;background:${getColor(p.prob)}"></div>
+        </div>
+      </div>`).join('');
+
+    return `
+      <div class="card" style="border:2px solid var(--green);">
+        <h3>🎯 Mejores picks para este partido <small>(${picks.length})</small></h3>
+        ${filas}
+        <p style="color:var(--chalk-dim); margin:10px 0 0; font-size:0.72rem;">${umbrales}</p>
+      </div>`;
   }
 
   function displayResults(data) {
@@ -140,7 +321,10 @@ document.addEventListener('DOMContentLoaded', () => {
         ` : `<div class="compare-row"><span>Datos ML parciales para este partido — se muestra solo tu modelo.</span></div>`}
       </div>` : '';
 
+    const picksCard = renderPicksCard(data);
+
     predictionsContent.innerHTML = `
+      ${picksCard}
       <div class="card">
         <h3>Resultado 1X2</h3>
         ${fila('Local', data.resultProbs.local)}
@@ -182,60 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsDiv.style.display = 'block';
   }
 
-  function getColor(prob) {
-    if (prob >= 65) return 'var(--green)';
-    if (prob >= 42) return 'var(--yellow)';
-    return 'var(--red)';
-  }
-
+  // --- Arranque ---
   populateLeagues();
-  const firstLeague = Object.keys(LIGAS)[0];
-  if (firstLeague) populateTeams(firstLeague);
-
-  // --- NUEVO: Módulo de Sincronización Webhook ---
-  const syncBtn = document.getElementById('sync-crm-btn');
-  const syncStatus = document.getElementById('sync-status');
-
-  if (syncBtn) {
-    syncBtn.addEventListener('click', async () => {
-      // URL del webhook configurado para capturar y rutear datos hacia el CRM
-      const WEBHOOK_URL = 'https://tu-webhook-url.com/recepcion-picks';
-      
-      const picks = window.lastValuePicks || [];
-      
-      if (picks.length === 0) {
-        syncStatus.textContent = "No hay picks de valor para sincronizar hoy.";
-        syncStatus.style.color = "var(--yellow)";
-        return;
-      }
-
-      syncBtn.disabled = true;
-      syncStatus.textContent = "Sincronizando con plataforma...";
-      syncStatus.style.color = "var(--chalk)";
-
-      try {
-        const response = await fetch(WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            fecha: new Date().toISOString(), 
-            totalPicks: picks.length, 
-            picks: picks 
-          })
-        });
-
-        if (response.ok) {
-          syncStatus.textContent = `✅ ${picks.length} picks enviados exitosamente.`;
-          syncStatus.style.color = "var(--green)";
-        } else {
-          throw new Error('Error en la respuesta del endpoint');
-        }
-      } catch (error) {
-        syncStatus.textContent = `❌ Error: ${error.message}`;
-        syncStatus.style.color = "var(--red)";
-      } finally {
-        syncBtn.disabled = false;
-      }
-    });
-  }
+  restaurarEstado();
 });
