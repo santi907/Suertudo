@@ -3,12 +3,21 @@ import { simulateMatch } from './model.js';
 import { calcularTasasBase, ajustarHomeAdvantage, ajustarRho, shrinkHaciaBase } from './calibrate.js';
 
 // ============ CONFIGURACIÓN DE CALIBRACIÓN ============
-const CAL_ITERACIONES = 10;         // cuántas pasadas de ajuste
-const CAL_MUESTRA = 60;            // cuántos partidos usar por iteración
-const CAL_MIN_PARTIDOS = 20;       // por debajo de esto, no calibrar
-const SHRINK_ALPHA = 0.15;         // 0 = sin shrinkage, 1 = solo tasas base
+const CAL_ITERACIONES = 10;
+const CAL_MUESTRA = 60;
+const CAL_MIN_PARTIDOS = 20;
+const SHRINK_ALPHA = 0.15;
 
-// ============ MÉTRICAS DE DEVIG ============
+// ============ CONFIGURACIÓN DE RECOMENDACIONES ============
+// Reglas que aplica el sistema para emitir picks:
+//   1X2   → pick solo si el favorito llega a UMBRAL_1X2
+//   Goles → pick Over X.5 (la línea más alta que supere UMBRAL_GOLES)
+//   Córners → pick Over 3.5 del equipo cuyo APP_*_over35 ≥ UMBRAL_CORNERS
+const UMBRAL_1X2 = 45;
+const UMBRAL_GOLES = 60;
+const UMBRAL_CORNERS = 60;
+
+// ============ DEVIG ============
 function devigar2(oddsA, oddsB) {
   if (!oddsA || !oddsB) return null;
   const pA = 1 / oddsA, pB = 1 / oddsB;
@@ -29,6 +38,8 @@ const logSection = document.getElementById('log-section');
 const logDiv = document.getElementById('log');
 const calibrationSection = document.getElementById('calibration-section');
 const calibrationContent = document.getElementById('calibration-content');
+const picksSection = document.getElementById('picks-section');
+const picksContent = document.getElementById('picks-content');
 const resultsSection = document.getElementById('results');
 const resultsContent = document.getElementById('results-content');
 const exportSection = document.getElementById('export-section');
@@ -36,14 +47,12 @@ const exportBtn = document.getElementById('export-btn');
 
 let historial = null;
 let filasComparacion = [];
-let calibracionUsada = null;
 
 fileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   runBtn.disabled = true;
   historial = null;
   if (!file) { fileInfo.textContent = ''; return; }
-
   try {
     const text = await file.text();
     const data = JSON.parse(text);
@@ -64,29 +73,24 @@ fileInput.addEventListener('change', async (e) => {
 });
 
 function fmt(n) { return Number(n).toFixed(1); }
-
 function log(msg) {
   logSection.style.display = 'block';
   logDiv.textContent += msg + '\n';
   logDiv.scrollTop = logDiv.scrollHeight;
 }
 
-// ============ MÉTRICAS ============
+// ============ MÉTRICAS POR MERCADO ============
 class MarketStats {
   constructor(name) {
     this.name = name;
-    this.n = 0;
-    this.hits = 0;
-    this.brierSum = 0;
-    this.sumaReal = 0;
+    this.n = 0; this.hits = 0; this.brierSum = 0; this.sumaReal = 0;
     this.buckets = { '0-20': [0, 0], '20-40': [0, 0], '40-60': [0, 0], '60-80': [0, 0], '80-100': [0, 0] };
   }
   add(predictedPct, actualBool) {
     if (predictedPct == null || !Number.isFinite(predictedPct)) return;
     this.n++;
     this.sumaReal += actualBool ? 1 : 0;
-    const predictedYes = predictedPct >= 50;
-    if (predictedYes === actualBool) this.hits++;
+    if ((predictedPct >= 50) === actualBool) this.hits++;
     const p = predictedPct / 100;
     this.brierSum += (p - (actualBool ? 1 : 0)) ** 2;
     const b = predictedPct < 20 ? '0-20' : predictedPct < 40 ? '20-40' : predictedPct < 60 ? '40-60' : predictedPct < 80 ? '60-80' : '80-100';
@@ -104,23 +108,21 @@ class MarketStats {
   }
 }
 
-// ============ CALIBRACIÓN AUTOMÁTICA ============
+// ============ CALIBRACIÓN ============
 async function calibrarLiga(leagueKey, partidos) {
   const tasas = calcularTasasBase(partidos);
   if (tasas.n < CAL_MIN_PARTIDOS) {
-    log(`⚠️ Solo ${tasas.n} partidos con resultado — se omite la calibración (mínimo ${CAL_MIN_PARTIDOS}).`);
-    return { calibracion: null, tasas, historial: [] };
+    log(`⚠️ Solo ${tasas.n} partidos — se omite la calibración.`);
+    return { calibracion: null, tasas, historial: [], leagueKey };
   }
 
-  log(`\n🎯 Calibrando liga (${tasas.n} partidos)... [v2]`);
+  log(`\n🎯 Calibrando liga (${tasas.n} partidos)...`);
   log(`   Tasa real: local ${fmt(tasas.homeRate*100)}% · empate ${fmt(tasas.drawRate*100)}% · visitante ${fmt(tasas.awayRate*100)}%`);
-  log(`   Goles promedio: ${fmt(tasas.goalsAvg)} · Córners: ${fmt(tasas.cornAvg)}`);
 
   let homeAdv = HOME_ADVANTAGE[leagueKey] ?? 1.05;
   let rho = DIXON_COLES_RHO[leagueKey] ?? DIXON_COLES_RHO.default ?? -0.1;
   const historial = [];
 
-  // Muestreo distribuido a lo largo del historial
   const muestra = [];
   const step = Math.max(1, Math.floor(partidos.length / CAL_MUESTRA));
   for (let i = 0; i < partidos.length && muestra.length < CAL_MUESTRA; i += step) {
@@ -130,7 +132,6 @@ async function calibrarLiga(leagueKey, partidos) {
   }
 
   for (let iter = 0; iter < CAL_ITERACIONES; iter++) {
-    // Medimos PROMEDIO de probabilidades (continuo, estable), no argmax
     let sumL = 0, sumE = 0, sumV = 0, n = 0;
     for (const p of muestra) {
       try {
@@ -138,10 +139,9 @@ async function calibrarLiga(leagueKey, partidos) {
           staticOnly: true,
           calibracion: { homeAdvantage: homeAdv, rho }
         });
-        const rp = pred.resultProbs;
-        sumL += rp.local;
-        sumE += rp.empate;
-        sumV += rp.visitante;
+        sumL += pred.resultProbs.local;
+        sumE += pred.resultProbs.empate;
+        sumV += pred.resultProbs.visitante;
         n++;
       } catch (e) { /* skip */ }
     }
@@ -154,56 +154,36 @@ async function calibrarLiga(leagueKey, partidos) {
               + Math.abs(tasas.drawRate - predDrawRate)
               + Math.abs(tasas.awayRate - predAwayRate);
 
-    historial.push({
-      iter: iter + 1,
-      homeAdv, rho,
-      predHome: predHomeRate, predDraw: predDrawRate, predAway: predAwayRate,
-      err
-    });
+    historial.push({ iter: iter + 1, homeAdv, rho,
+      predHome: predHomeRate, predDraw: predDrawRate, predAway: predAwayRate, err });
 
     log(`   [iter ${iter + 1}] homeAdv=${homeAdv.toFixed(3)} rho=${rho.toFixed(3)} → prob media L:${fmt(predHomeRate*100)}% E:${fmt(predDrawRate*100)}% V:${fmt(predAwayRate*100)}% (err ${fmt(err*100)}%)`);
 
-    if (err < 0.02) {
-      log(`   ✓ Convergió (error < 2%)`);
-      break;
-    }
+    if (err < 0.02) { log(`   ✓ Convergió (error < 2%)`); break; }
 
     homeAdv = ajustarHomeAdvantage(homeAdv, tasas, predHomeRate);
     rho = ajustarRho(rho, tasas, predDrawRate);
   }
 
-  return {
-    calibracion: { homeAdvantage: homeAdv, rho },
-    tasas,
-    historial
-  };
+  return { calibracion: { homeAdvantage: homeAdv, rho }, tasas, historial, leagueKey };
 }
 
 function renderCalibracion(resultado) {
   if (!resultado) return;
-  const { calibracion, tasas, historial } = resultado;
+  const { calibracion, tasas, historial, leagueKey } = resultado;
   calibrationSection.style.display = 'block';
-
   if (!calibracion) {
     calibrationContent.innerHTML = `<p style="color:var(--chalk-dim)">Liga con ${tasas.n} partidos — no se calibró (mínimo ${CAL_MIN_PARTIDOS}).</p>`;
     return;
   }
-
   const ultimo = historial[historial.length - 1];
   const fila = (label, real, pred) => {
     const d = Math.abs(real - pred);
     const color = d < 0.03 ? 'var(--green)' : d < 0.06 ? 'var(--yellow)' : 'var(--red)';
-    return `
-      <div class="compare-row">
-        <span>${label}</span>
-        <span class="grid-plain">real ${fmt(real*100)}%</span>
-        <span class="grid-plain" style="color:${color}">pred ${fmt(pred*100)}%</span>
-      </div>`;
+    return `<div class="compare-row"><span>${label}</span><span class="grid-plain">real ${fmt(real*100)}%</span><span class="grid-plain" style="color:${color}">pred ${fmt(pred*100)}%</span></div>`;
   };
-
-  const originalHA = HOME_ADVANTAGE[resultado.leagueKey] ?? HOME_ADVANTAGE['PL'];
-  const originalRho = DIXON_COLES_RHO[resultado.leagueKey] ?? DIXON_COLES_RHO.default;
-
+  const originalHA = HOME_ADVANTAGE[leagueKey];
+  const originalRho = DIXON_COLES_RHO[leagueKey];
   calibrationContent.innerHTML = `
     <div class="card">
       <h3>Parámetros derivados <small>(auto)</small></h3>
@@ -224,9 +204,217 @@ function renderCalibracion(resultado) {
       ${fila('Visitante gana', tasas.awayRate, ultimo.predAway)}
       <p style="margin:10px 0 0; font-size:0.8rem; color:var(--chalk-dim)">
         Error total: ${fmt(ultimo.err * 100)}% — ${historial.length} iteraciones.
-        ${SHRINK_ALPHA > 0 ? `Shrinkage activo (α=${SHRINK_ALPHA}).` : ''}
+        Shrinkage activo (α=${SHRINK_ALPHA}).
       </p>
     </div>`;
+}
+
+// ============ RECOMENDACIONES ============
+function calcularRecomendacion(p, pred, resultProbsFinal) {
+  const rec = {
+    fecha: p.fecha ?? '',
+    local: p.local,
+    visitante: p.visitante,
+    real: p.goles_local != null ? `${p.goles_local}-${p.goles_visitante}` : null,
+    resultado: null,
+    totalGoles: null,
+    cornersLocal: p.corners_local ?? null,
+    cornersVisit: p.corners_visitante ?? null,
+    picks: [],
+    sin1x2: null,
+  };
+
+  if (p.goles_local != null && p.goles_visitante != null) {
+    rec.totalGoles = p.goles_local + p.goles_visitante;
+    rec.resultado = p.goles_local > p.goles_visitante ? 'local'
+                  : p.goles_local < p.goles_visitante ? 'visitante' : 'empate';
+  }
+
+  // --- 1X2 ---
+  const max1x2 = Math.max(resultProbsFinal.local, resultProbsFinal.empate, resultProbsFinal.visitante);
+  if (max1x2 >= UMBRAL_1X2) {
+    let pick;
+    if (resultProbsFinal.local === max1x2) {
+      pick = { code: '1', label: 'Local gana', prob: resultProbsFinal.local,
+               real: rec.resultado, casaOdds: p.odds_local, hit: rec.resultado === 'local' };
+    } else if (resultProbsFinal.empate === max1x2) {
+      pick = { code: 'X', label: 'Empate', prob: resultProbsFinal.empate,
+               real: rec.resultado, casaOdds: p.odds_empate, hit: rec.resultado === 'empate' };
+    } else {
+      pick = { code: '2', label: 'Visitante gana', prob: resultProbsFinal.visitante,
+               real: rec.resultado, casaOdds: p.odds_visitante, hit: rec.resultado === 'visitante' };
+    }
+    rec.picks.push({ mercado: '1X2', ...pick, tieneReal: rec.resultado != null });
+  } else {
+    rec.sin1x2 = { razon: `máx ${fmt(max1x2)}% < ${UMBRAL_1X2}%` };
+  }
+
+  // --- Goles: la línea más alta que supere el umbral ---
+  const lineas = [
+    { code: 'over35', label: 'Over 3.5 goles', prob: pred.over35, umbral: 3.5, casaOdds: p.odds_over35 },
+    { code: 'over25', label: 'Over 2.5 goles', prob: pred.over25, umbral: 2.5, casaOdds: p.odds_over25 },
+    { code: 'over15', label: 'Over 1.5 goles', prob: pred.over15, umbral: 1.5, casaOdds: p.odds_over15 },
+  ];
+  for (const l of lineas) {
+    if (l.prob != null && l.prob >= UMBRAL_GOLES) {
+      const hit = rec.totalGoles != null ? rec.totalGoles > l.umbral : null;
+      rec.picks.push({
+        mercado: 'Goles', code: l.code, label: l.label, prob: l.prob,
+        casaOdds: l.casaOdds, hit, tieneReal: rec.totalGoles != null,
+      });
+      break; // solo la más alta
+    }
+  }
+
+  // --- Córners por equipo ---
+  const cL = pred.cornerProbs?.porEquipo?.local?.over3;
+  const cV = pred.cornerProbs?.porEquipo?.visitante?.over3;
+  if (cL != null && cL >= UMBRAL_CORNERS) {
+    const hit = rec.cornersLocal != null ? rec.cornersLocal > 3.5 : null;
+    rec.picks.push({
+      mercado: 'Córners', code: 'cl_over35',
+      label: `Córners ${p.local} Over 3.5`, prob: cL,
+      casaOdds: null, hit, tieneReal: rec.cornersLocal != null,
+    });
+  }
+  if (cV != null && cV >= UMBRAL_CORNERS) {
+    const hit = rec.cornersVisit != null ? rec.cornersVisit > 3.5 : null;
+    rec.picks.push({
+      mercado: 'Córners', code: 'cv_over35',
+      label: `Córners ${p.visitante} Over 3.5`, prob: cV,
+      casaOdds: null, hit, tieneReal: rec.cornersVisit != null,
+    });
+  }
+
+  return rec;
+}
+
+class PicksStats {
+  constructor() {
+    this.mercados = {
+      '1X2': { n: 0, hits: 0, label: '1X2 (favorito ≥ ' + UMBRAL_1X2 + '%)' },
+      'Over 1.5': { n: 0, hits: 0, label: 'Over 1.5 goles' },
+      'Over 2.5': { n: 0, hits: 0, label: 'Over 2.5 goles' },
+      'Over 3.5': { n: 0, hits: 0, label: 'Over 3.5 goles' },
+      'Córners local Over 3.5': { n: 0, hits: 0, label: 'Córners local Over 3.5' },
+      'Córners visitante Over 3.5': { n: 0, hits: 0, label: 'Córners visitante Over 3.5' },
+    };
+    this.partidosConPick = 0;
+  }
+  add(rec) {
+    if (rec.picks.length > 0) this.partidosConPick++;
+    for (const pick of rec.picks) {
+      if (!pick.tieneReal) continue;
+      let key;
+      if (pick.mercado === '1X2') key = '1X2';
+      else if (pick.mercado === 'Goles') {
+        if (pick.code === 'over15') key = 'Over 1.5';
+        else if (pick.code === 'over25') key = 'Over 2.5';
+        else if (pick.code === 'over35') key = 'Over 3.5';
+      } else if (pick.mercado === 'Córners') {
+        key = pick.code === 'cl_over35' ? 'Córners local Over 3.5' : 'Córners visitante Over 3.5';
+      }
+      if (!key || !this.mercados[key]) continue;
+      this.mercados[key].n++;
+      if (pick.hit) this.mercados[key].hits++;
+    }
+  }
+  summary() {
+    const out = [];
+    for (const [k, v] of Object.entries(this.mercados)) {
+      out.push({
+        key: k, label: v.label, n: v.n, hits: v.hits,
+        rate: v.n ? v.hits / v.n * 100 : null
+      });
+    }
+    return { mercados: out, partidosConPick: this.partidosConPick };
+  }
+}
+
+function colorPick(v) {
+  if (v == null) return 'var(--chalk-dim)';
+  if (v >= 70) return 'var(--green)';
+  if (v >= 60) return 'var(--yellow)';
+  return 'var(--red)';
+}
+
+function valorEV(probPct, casaOdds) {
+  if (!probPct || !casaOdds) return null;
+  return (probPct / 100) * casaOdds;
+}
+
+function renderPicks(recs, stats) {
+  if (!recs || recs.length === 0) return;
+  picksSection.style.display = 'block';
+
+  const conPicks = recs.filter(r => r.picks.length > 0);
+  const sinPicks = recs.filter(r => r.picks.length === 0);
+
+  // Resumen por mercado
+  const resumen = stats.mercados.map(m => {
+    const c = colorPick(m.rate);
+    const rateTxt = m.rate == null ? '—' : fmt(m.rate) + '%';
+    return `<div class="compare-row">
+      <span>${m.label}</span>
+      <span class="grid-plain">${m.n} pick${m.n === 1 ? '' : 's'}</span>
+      <span class="grid-plain" style="color:${c}">${rateTxt}</span>
+    </div>`;
+  }).join('');
+
+  const resumenHTML = `
+    <div class="card" style="border:2px solid var(--green);">
+      <h3>📊 Resumen de picks <small>(${stats.partidosConPick}/${recs.length} partidos con al menos un pick)</small></h3>
+      <div class="compare-row compare-head"><span>Mercado</span><span>Picks emitidos</span><span>Acierto</span></div>
+      ${resumen}
+      <p style="margin:10px 0 0; font-size:0.78rem; color:var(--chalk-dim); line-height:1.5;">
+        <strong>Reglas aplicadas:</strong>
+        1X2 solo si favorito ≥ ${UMBRAL_1X2}% ·
+        Goles la línea más alta con ≥ ${UMBRAL_GOLES}% ·
+        Córners Over 3.5 de equipo con ≥ ${UMBRAL_CORNERS}%.
+        <br><strong>Partidos descartados (sin picks):</strong> ${sinPicks.length}.
+      </p>
+    </div>`;
+
+  // Ordenar por fecha descendente
+  const ordenados = [...conPicks].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+
+  const cards = ordenados.map(r => {
+    const fechaCorta = r.fecha ? r.fecha.slice(0, 10) : '';
+    const realTxt = r.real ? `Real: <strong>${r.real}</strong> (${r.resultado})` : 'Real: sin datos';
+
+    const picksHTML = r.picks.map(pick => {
+      const marca = pick.tieneReal ? (pick.hit ? '✅' : '❌') : '⏳';
+      const realDetalle = pick.tieneReal
+        ? (pick.mercado === 'Córners'
+            ? `${pick.code === 'cl_over35' ? r.cornersLocal : r.cornersVisit} córners`
+            : `${r.totalGoles} goles`)
+        : '';
+      const ev = valorEV(pick.prob, pick.casaOdds);
+      const valorBadge = ev != null
+        ? (ev >= 1.05
+            ? `<span style="color:var(--green); font-size:0.75rem;">· VALOR (EV ${ev.toFixed(2)})</span>`
+            : `<span style="color:var(--chalk-dim); font-size:0.75rem;">· sin valor (EV ${ev.toFixed(2)})</span>`)
+        : '';
+      return `<div class="compare-row" style="grid-template-columns: 1fr auto auto;">
+        <span>${marca} ${pick.label}</span>
+        <span class="grid-plain" style="color:${colorPick(pick.prob)}">${fmt(pick.prob)}%</span>
+        <span class="grid-plain" style="font-size:0.75rem;">${realDetalle} ${valorBadge}</span>
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="card">
+        <h3 style="font-size:1rem;">${r.local} vs ${r.visitante}</h3>
+        <p style="margin:2px 0 8px; font-size:0.75rem; color:var(--chalk-dim);">${fechaCorta} · ${realTxt}</p>
+        ${picksHTML}
+      </div>`;
+  }).join('');
+
+  picksContent.innerHTML = resumenHTML + `
+    <h2 style="font-family:'Anton',sans-serif;font-size:1.15rem;letter-spacing:0.02em;color:var(--chalk);margin:20px 0 10px;">
+      Detalle por partido (${ordenados.length})
+    </h2>
+    ${cards}`;
 }
 
 // ============ RUN ============
@@ -237,20 +425,17 @@ runBtn.addEventListener('click', async () => {
   resultsSection.style.display = 'none';
   exportSection.style.display = 'none';
   calibrationSection.style.display = 'none';
+  picksSection.style.display = 'none';
   filasComparacion = [];
 
   const leagueKey = historial.leagueKey;
   const partidos = historial.partidos;
 
-  // === 1. Calibración automática ===
   const calResult = await calibrarLiga(leagueKey, partidos);
-  calResult.leagueKey = leagueKey;
   const calibracion = calResult.calibracion;
   const tasas = calResult.tasas;
-  calibracionUsada = calibracion;
   renderCalibracion(calResult);
 
-  // === 2. Backtest con calibración aplicada ===
   log(`\n▶ Corriendo backtest con calibración ${calibracion ? 'ACTIVA' : 'por defecto'}...`);
 
   const markets = {
@@ -268,23 +453,18 @@ runBtn.addEventListener('click', async () => {
     cornersVisit35: new MarketStats('Córners visitante Over 3.5'),
   };
   const mercado = {
-    local: new MarketStats('Local gana'),
-    empate: new MarketStats('Empate'),
-    visitante: new MarketStats('Visitante gana'),
-    over15: new MarketStats('Over 1.5 goles'),
-    over25: new MarketStats('Over 2.5 goles'),
-    over35: new MarketStats('Over 3.5 goles'),
-    btts: new MarketStats('Ambos marcan'),
+    local: new MarketStats('Local gana'), empate: new MarketStats('Empate'), visitante: new MarketStats('Visitante gana'),
+    over15: new MarketStats('Over 1.5 goles'), over25: new MarketStats('Over 2.5 goles'),
+    over35: new MarketStats('Over 3.5 goles'), btts: new MarketStats('Ambos marcan'),
   };
   const modeloVsMercado = {
-    local: new MarketStats('Local gana'),
-    empate: new MarketStats('Empate'),
-    visitante: new MarketStats('Visitante gana'),
-    over15: new MarketStats('Over 1.5 goles'),
-    over25: new MarketStats('Over 2.5 goles'),
-    over35: new MarketStats('Over 3.5 goles'),
-    btts: new MarketStats('Ambos marcan'),
+    local: new MarketStats('Local gana'), empate: new MarketStats('Empate'), visitante: new MarketStats('Visitante gana'),
+    over15: new MarketStats('Over 1.5 goles'), over25: new MarketStats('Over 2.5 goles'),
+    over35: new MarketStats('Over 3.5 goles'), btts: new MarketStats('Ambos marcan'),
   };
+
+  const picksStats = new PicksStats();
+  const todasLasRecs = [];
 
   let evaluados = 0, saltados = 0;
 
@@ -296,19 +476,20 @@ runBtn.addEventListener('click', async () => {
 
     let pred;
     try {
-      pred = await simulateMatch(leagueKey, p.local, p.visitante, {
-        staticOnly: true,
-        calibracion
-      });
+      pred = await simulateMatch(leagueKey, p.local, p.visitante, { staticOnly: true, calibracion });
     } catch (e) {
       saltados++;
       continue;
     }
 
-    // Aplicar shrinkage hacia la tasa base
     const resultProbsFinal = SHRINK_ALPHA > 0
       ? shrinkHaciaBase(pred.resultProbs, tasas, SHRINK_ALPHA)
       : pred.resultProbs;
+
+    // -------- Recomendación por partido --------
+    const rec = calcularRecomendacion(p, pred, resultProbsFinal);
+    todasLasRecs.push(rec);
+    picksStats.add(rec);
 
     const totalGoles = p.goles_local + p.goles_visitante;
     const resultado = p.goles_local > p.goles_visitante ? 'local' : p.goles_local < p.goles_visitante ? 'visitante' : 'empate';
@@ -351,16 +532,11 @@ runBtn.addEventListener('click', async () => {
     }
 
     filasComparacion.push({
-      fecha: p.fecha ?? '',
-      local: p.local,
-      visitante: p.visitante,
+      fecha: p.fecha ?? '', local: p.local, visitante: p.visitante,
       app: {
-        local: resultProbsFinal.local,
-        empate: resultProbsFinal.empate,
-        visitante: resultProbsFinal.visitante,
+        local: resultProbsFinal.local, empate: resultProbsFinal.empate, visitante: resultProbsFinal.visitante,
         over15: pred.over15, over25: pred.over25, over35: pred.over35, btts: pred.btts,
-        corners_over75: pred.cornerProbs?.over7 ?? null,
-        corners_over85: pred.cornerProbs?.over8 ?? null,
+        corners_over75: pred.cornerProbs?.over7 ?? null, corners_over85: pred.cornerProbs?.over8 ?? null,
         corners_over95: pred.cornerProbs?.over9 ?? null,
         corners_local_over35: pred.cornerProbs?.porEquipo?.local?.over3 ?? null,
         corners_visit_over35: pred.cornerProbs?.porEquipo?.visitante?.over3 ?? null,
@@ -371,8 +547,7 @@ runBtn.addEventListener('click', async () => {
         over15: totalGoles > 1.5 ? 1 : 0, over25: totalGoles > 2.5 ? 1 : 0,
         over35: totalGoles > 3.5 ? 1 : 0,
         btts: (p.goles_local > 0 && p.goles_visitante > 0) ? 1 : 0,
-        corners_local: p.corners_local ?? null,
-        corners_visitante: p.corners_visitante ?? null,
+        corners_local: p.corners_local ?? null, corners_visitante: p.corners_visitante ?? null,
         corners_total: (p.corners_local != null && p.corners_visitante != null) ? p.corners_local + p.corners_visitante : null,
       },
       casa: {
@@ -389,12 +564,14 @@ runBtn.addEventListener('click', async () => {
   }
 
   log(`\n✅ Listo. ${evaluados} evaluados, ${saltados} salteados.`);
+  log(`📋 Picks generados en ${picksStats.partidosConPick}/${evaluados} partidos.`);
 
   const mercadoResumen = {};
   for (const [k, m] of Object.entries(mercado)) mercadoResumen[k] = m.summary();
   const modeloVsMercadoResumen = {};
   for (const [k, m] of Object.entries(modeloVsMercado)) modeloVsMercadoResumen[k] = m.summary();
 
+  renderPicks(todasLasRecs, picksStats.summary());
   renderResults(
     Object.entries(markets).map(([k, m]) => ({ key: k, ...m.summary() })),
     mercadoResumen,
@@ -412,35 +589,29 @@ function vsBaseColor(m) {
   if (m >= 0) return 'var(--yellow)';
   return 'var(--red)';
 }
-
 function vsBaseNote(m, baseRate) {
   if (m == null) return '';
-  const br = baseRate * 100; // baseRate viene como fracción 0-1
+  const br = baseRate * 100;
   const signo = m >= 0 ? '+' : '';
   if (m >= 10) return `${signo}${fmt(m)}% mejor que solo saber que esto pasa ${fmt(br)}% de las veces`;
   if (m >= 0) return `${signo}${fmt(m)}% mejor que adivinar el ${fmt(br)}% de siempre`;
   return `${fmt(m)}% peor que adivinar el ${fmt(br)}% de siempre`;
 }
-
 function bucketRows(buckets) {
-  return Object.entries(buckets)
-    .filter(([, v]) => v[1] > 0)
+  return Object.entries(buckets).filter(([, v]) => v[1] > 0)
     .map(([range, [hits, total]]) => `
       <div class="compare-row">
         <span>Predijo ${range}%</span>
         <span class="grid-plain">${total} partidos</span>
         <span class="grid-plain">pasó ${fmt(hits / total * 100)}%</span>
-      </div>`)
-    .join('');
+      </div>`).join('');
 }
-
 function vsMercadoColor(m) {
   if (m == null) return 'var(--chalk-dim)';
   if (m > 2) return 'var(--green)';
   if (m >= -2) return 'var(--yellow)';
   return 'var(--red)';
 }
-
 function vsMercadoNote(modeloSum, mercadoSum) {
   if (!mercadoSum || mercadoSum.n < 20) return null;
   const mejora = ((mercadoSum.brier - modeloSum.brier) / mercadoSum.brier) * 100;
@@ -487,7 +658,6 @@ function renderResults(summaries, mercadoResumen = {}, modeloVsMercadoResumen = 
 // ============ EXPORT ============
 function exportarComparacionCSV(filas) {
   if (!filas.length) { alert('No hay partidos para exportar.'); return; }
-
   const headers = [
     'fecha','local','visitante',
     'APP_local','APP_empate','APP_visitante',
@@ -504,25 +674,20 @@ function exportarComparacionCSV(filas) {
     'CASA_odds_over35','CASA_odds_under35','CASA_fair_over35',
     'CASA_odds_btts_si','CASA_odds_btts_no','CASA_fair_btts_si',
   ];
-
   const escapar = (v) => {
     if (v === null || v === undefined) return '';
     const s = String(v);
     return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const num = (v) => (v == null || !Number.isFinite(v)) ? '' : Number(v).toFixed(2);
-
   const lineas = [headers.join(',')];
   for (const f of filas) {
     const dev3 = devigar3(f.casa.odds_local, f.casa.odds_empate, f.casa.odds_visitante);
-    const fairL = dev3 ? dev3[0] : null;
-    const fairE = dev3 ? dev3[1] : null;
-    const fairV = dev3 ? dev3[2] : null;
+    const fairL = dev3 ? dev3[0] : null, fairE = dev3 ? dev3[1] : null, fairV = dev3 ? dev3[2] : null;
     const fairO15 = devigar2(f.casa.odds_over15, f.casa.odds_under15);
     const fairO25 = devigar2(f.casa.odds_over25, f.casa.odds_under25);
     const fairO35 = devigar2(f.casa.odds_over35, f.casa.odds_under35);
     const fairBttsSi = devigar2(f.casa.odds_btts_si, f.casa.odds_btts_no);
-
     lineas.push([
       f.fecha, f.local, f.visitante,
       num(f.app.local), num(f.app.empate), num(f.app.visitante),
@@ -540,7 +705,6 @@ function exportarComparacionCSV(filas) {
       f.casa.odds_btts_si ?? '', f.casa.odds_btts_no ?? '', num(fairBttsSi),
     ].map(escapar).join(','));
   }
-
   const csv = '\uFEFF' + lineas.join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -553,5 +717,4 @@ function exportarComparacionCSV(filas) {
   a.remove();
   URL.revokeObjectURL(url);
 }
-
 exportBtn.addEventListener('click', () => exportarComparacionCSV(filasComparacion));
