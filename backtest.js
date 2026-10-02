@@ -8,14 +8,45 @@ const CAL_MUESTRA = 60;
 const CAL_MIN_PARTIDOS = 20;
 const SHRINK_ALPHA = 0.15;
 
-// ============ CONFIGURACIÓN DE RECOMENDACIONES ============
-// Reglas que aplica el sistema para emitir picks:
-//   1X2   → pick solo si el favorito llega a UMBRAL_1X2
-//   Goles → pick Over X.5 (la línea más alta que supere UMBRAL_GOLES)
-//   Córners → pick Over 3.5 del equipo cuyo APP_*_over35 ≥ UMBRAL_CORNERS
-const UMBRAL_1X2 = 45;
-const UMBRAL_GOLES = 60;
-const UMBRAL_CORNERS = 60;
+// ============================================================================
+// UMBRALES POR LIGA
+// Cada liga tiene sus propios umbrales según lo que aprendimos en backtests.
+// Si una liga no está acá, usa DEFAULT.
+//
+// Los valores salen de la experiencia real:
+//   - Ligas con muchos empates (ARG, PL) → 1X2 más exigente, córners visitante off
+//   - Ligas con muchos goles (MLS) → umbral goles más bajo
+//   - BSB (Brasil B) → los umbrales originales que funcionaron bien
+// ============================================================================
+const UMBRALES_POR_LIGA = {
+  // Premier League: muy eficiente el mercado, córners visitante malos
+  PL:  { umbral1x2: 50, umbralGoles: 75, umbralCorners: 65, umbralBtss: 70, cornersVisitante: false },
+
+  // Brasileirão B: los umbrales originales funcionaron
+  BSB: { umbral1x2: 45, umbralGoles: 60, umbralCorners: 60, umbralBtss: 60, cornersVisitante: true },
+
+  // Argentina: muchos empates, 1X2 poco fiable
+  ARG: { umbral1x2: 55, umbralGoles: 65, umbralCorners: 60, umbralBtss: 60, cornersVisitante: false },
+
+  // MLS: liga de goles, umbral goles más bajo
+  MLS: { umbral1x2: 50, umbralGoles: 65, umbralCorners: 65, umbralBtss: 65, cornersVisitante: false },
+
+  // Brasileirão A: intermedio
+  BSA: { umbral1x2: 50, umbralGoles: 65, umbralCorners: 65, umbralBtss: 65, cornersVisitante: true },
+
+  // Colombia: equipos parejos, 1X2 poco fiable
+  CPA: { umbral1x2: 55, umbralGoles: 65, umbralCorners: 60, umbralBtss: 60, cornersVisitante: false },
+
+  // Liga MX: parecido a MLS
+  MXL: { umbral1x2: 50, umbralGoles: 65, umbralCorners: 65, umbralBtss: 65, cornersVisitante: true },
+
+  // Default para ligas no configuradas: valores conservadores
+  DEFAULT: { umbral1x2: 45, umbralGoles: 60, umbralCorners: 60, umbralBtss: 60, cornersVisitante: true },
+};
+
+function getUmbrales(leagueKey) {
+  return UMBRALES_POR_LIGA[leagueKey] || UMBRALES_POR_LIGA.DEFAULT;
+}
 
 // ============ DEVIG ============
 function devigar2(oddsA, oddsB) {
@@ -184,6 +215,8 @@ function renderCalibracion(resultado) {
   };
   const originalHA = HOME_ADVANTAGE[leagueKey];
   const originalRho = DIXON_COLES_RHO[leagueKey];
+  const umbrales = getUmbrales(leagueKey);
+
   calibrationContent.innerHTML = `
     <div class="card">
       <h3>Parámetros derivados <small>(auto)</small></h3>
@@ -195,22 +228,30 @@ function renderCalibracion(resultado) {
       <div class="compare-row">
         <span>DIXON_COLES_RHO</span>
         <span class="grid-plain">${(originalRho ?? -0.1).toFixed(3)} original</span>
-        <span class="prob" style="color:var(--green)">${calibracion.rho.toFixed(3)}</span>
+        <span class="prob" style="color:${calibracion.rho <= -0.34 ? 'var(--yellow)' : 'var(--green)'}">${calibracion.rho.toFixed(3)}</span>
       </div>
       <h3 class="corner-team-title">Distribución: real vs predicha (calibrada)</h3>
       <div class="compare-row compare-head"><span>Resultado</span><span>Real</span><span>Modelo</span></div>
       ${fila('Local gana', tasas.homeRate, ultimo.predHome)}
       ${fila('Empate', tasas.drawRate, ultimo.predDraw)}
       ${fila('Visitante gana', tasas.awayRate, ultimo.predAway)}
+      <h3 class="corner-team-title">Umbrales activos para ${leagueKey}</h3>
+      <div class="compare-row"><span>1X2 favorito mínimo</span><span class="grid-plain"></span><span class="prob" style="color:var(--green)">${umbrales.umbral1x2}%</span></div>
+      <div class="compare-row"><span>Goles (Over X.5)</span><span class="grid-plain"></span><span class="prob" style="color:var(--green)">${umbrales.umbralGoles}%</span></div>
+      <div class="compare-row"><span>Córners</span><span class="grid-plain"></span><span class="prob" style="color:var(--green)">${umbrales.umbralCorners}%</span></div>
+      <div class="compare-row"><span>BTTS</span><span class="grid-plain"></span><span class="prob" style="color:var(--green)">${umbrales.umbralBtss}%</span></div>
+      <div class="compare-row"><span>Córners visitante</span><span class="grid-plain"></span><span class="prob" style="color:${umbrales.cornersVisitante ? 'var(--green)' : 'var(--red)'}">${umbrales.cornersVisitante ? 'ON' : 'OFF'}</span></div>
       <p style="margin:10px 0 0; font-size:0.8rem; color:var(--chalk-dim)">
         Error total: ${fmt(ultimo.err * 100)}% — ${historial.length} iteraciones.
         Shrinkage activo (α=${SHRINK_ALPHA}).
+        ${calibracion.rho <= -0.34 ? ' ⚠️ Rho en el límite inferior.' : ''}
       </p>
     </div>`;
 }
 
 // ============ RECOMENDACIONES ============
-function calcularRecomendacion(p, pred, resultProbsFinal) {
+function calcularRecomendacion(p, pred, resultProbsFinal, leagueKey) {
+  const U = getUmbrales(leagueKey);
   const rec = {
     fecha: p.fecha ?? '',
     local: p.local,
@@ -232,7 +273,7 @@ function calcularRecomendacion(p, pred, resultProbsFinal) {
 
   // --- 1X2 ---
   const max1x2 = Math.max(resultProbsFinal.local, resultProbsFinal.empate, resultProbsFinal.visitante);
-  if (max1x2 >= UMBRAL_1X2) {
+  if (max1x2 >= U.umbral1x2) {
     let pick;
     if (resultProbsFinal.local === max1x2) {
       pick = { code: '1', label: 'Local gana', prob: resultProbsFinal.local,
@@ -246,56 +287,96 @@ function calcularRecomendacion(p, pred, resultProbsFinal) {
     }
     rec.picks.push({ mercado: '1X2', ...pick, tieneReal: rec.resultado != null });
   } else {
-    rec.sin1x2 = { razon: `máx ${fmt(max1x2)}% < ${UMBRAL_1X2}%` };
+    rec.sin1x2 = { razon: `máx ${fmt(max1x2)}% < ${U.umbral1x2}%` };
   }
 
-  // --- Goles: la línea más alta que supere el umbral ---
+  // --- Goles ---
   const lineas = [
     { code: 'over35', label: 'Over 3.5 goles', prob: pred.over35, umbral: 3.5, casaOdds: p.odds_over35 },
     { code: 'over25', label: 'Over 2.5 goles', prob: pred.over25, umbral: 2.5, casaOdds: p.odds_over25 },
     { code: 'over15', label: 'Over 1.5 goles', prob: pred.over15, umbral: 1.5, casaOdds: p.odds_over15 },
   ];
   for (const l of lineas) {
-    if (l.prob != null && l.prob >= UMBRAL_GOLES) {
+    if (l.prob != null && l.prob >= U.umbralGoles) {
       const hit = rec.totalGoles != null ? rec.totalGoles > l.umbral : null;
       rec.picks.push({
         mercado: 'Goles', code: l.code, label: l.label, prob: l.prob,
         casaOdds: l.casaOdds, hit, tieneReal: rec.totalGoles != null,
       });
-      break; // solo la más alta
+      break;
     }
   }
 
-  // --- Córners por equipo ---
-  const cL = pred.cornerProbs?.porEquipo?.local?.over3;
-  const cV = pred.cornerProbs?.porEquipo?.visitante?.over3;
-  if (cL != null && cL >= UMBRAL_CORNERS) {
-    const hit = rec.cornersLocal != null ? rec.cornersLocal > 3.5 : null;
+  // --- BTTS Sí ---
+  if (pred.btts != null && pred.btts >= U.umbralBtss) {
+    const hit = (p.goles_local != null && p.goles_visitante != null)
+      ? (p.goles_local > 0 && p.goles_visitante > 0) : null;
     rec.picks.push({
-      mercado: 'Córners', code: 'cl_over35',
-      label: `Córners ${p.local} Over 3.5`, prob: cL,
-      casaOdds: null, hit, tieneReal: rec.cornersLocal != null,
+      mercado: 'BTTS', code: 'btts_si',
+      label: 'Ambos marcan (Sí)', prob: pred.btts,
+      casaOdds: p.odds_btts_si, hit, tieneReal: hit != null,
     });
   }
-  if (cV != null && cV >= UMBRAL_CORNERS) {
-    const hit = rec.cornersVisit != null ? rec.cornersVisit > 3.5 : null;
-    rec.picks.push({
-      mercado: 'Córners', code: 'cv_over35',
-      label: `Córners ${p.visitante} Over 3.5`, prob: cV,
-      casaOdds: null, hit, tieneReal: rec.cornersVisit != null,
-    });
+
+  // --- Córners totales (solo la más alta que supere el umbral) ---
+  if (pred.cornerProbs) {
+    const lineasC = [
+      { code: 'c_over95', label: 'Over 9.5 córners', prob: pred.cornerProbs.over9, umbral: 9.5 },
+      { code: 'c_over85', label: 'Over 8.5 córners', prob: pred.cornerProbs.over8, umbral: 8.5 },
+      { code: 'c_over75', label: 'Over 7.5 córners', prob: pred.cornerProbs.over7, umbral: 7.5 },
+    ];
+    for (const l of lineasC) {
+      if (l.prob != null && l.prob >= U.umbralCorners) {
+        const hit = (p.corners_local != null && p.corners_visitante != null)
+          ? (p.corners_local + p.corners_visitante > l.umbral) : null;
+        rec.picks.push({
+          mercado: 'Córners totales', code: l.code, label: l.label, prob: l.prob,
+          casaOdds: null, hit, tieneReal: hit != null,
+        });
+        break;
+      }
+    }
+  }
+
+  // --- Córners por equipo (solo si la liga lo permite) ---
+  if (U.cornersVisitante || true) {
+    const cL = pred.cornerProbs?.porEquipo?.local?.over3;
+    if (cL != null && cL >= U.umbralCorners) {
+      const hit = rec.cornersLocal != null ? rec.cornersLocal > 3.5 : null;
+      rec.picks.push({
+        mercado: 'Córners', code: 'cl_over35',
+        label: `Córners ${p.local} Over 3.5`, prob: cL,
+        casaOdds: null, hit, tieneReal: rec.cornersLocal != null,
+      });
+    }
+  }
+  if (U.cornersVisitante) {
+    const cV = pred.cornerProbs?.porEquipo?.visitante?.over3;
+    if (cV != null && cV >= U.umbralCorners) {
+      const hit = rec.cornersVisit != null ? rec.cornersVisit > 3.5 : null;
+      rec.picks.push({
+        mercado: 'Córners', code: 'cv_over35',
+        label: `Córners ${p.visitante} Over 3.5`, prob: cV,
+        casaOdds: null, hit, tieneReal: rec.cornersVisit != null,
+      });
+    }
   }
 
   return rec;
 }
 
 class PicksStats {
-  constructor() {
+  constructor(umbrales) {
+    this.umbrales = umbrales;
     this.mercados = {
-      '1X2': { n: 0, hits: 0, label: '1X2 (favorito ≥ ' + UMBRAL_1X2 + '%)' },
+      '1X2': { n: 0, hits: 0, label: `1X2 (favorito ≥ ${umbrales.umbral1x2}%)` },
       'Over 1.5': { n: 0, hits: 0, label: 'Over 1.5 goles' },
       'Over 2.5': { n: 0, hits: 0, label: 'Over 2.5 goles' },
       'Over 3.5': { n: 0, hits: 0, label: 'Over 3.5 goles' },
+      'BTTS Sí': { n: 0, hits: 0, label: 'Ambos marcan (Sí)' },
+      'Córners totales Over 7.5': { n: 0, hits: 0, label: 'Over 7.5 córners totales' },
+      'Córners totales Over 8.5': { n: 0, hits: 0, label: 'Over 8.5 córners totales' },
+      'Córners totales Over 9.5': { n: 0, hits: 0, label: 'Over 9.5 córners totales' },
       'Córners local Over 3.5': { n: 0, hits: 0, label: 'Córners local Over 3.5' },
       'Córners visitante Over 3.5': { n: 0, hits: 0, label: 'Córners visitante Over 3.5' },
     };
@@ -311,6 +392,12 @@ class PicksStats {
         if (pick.code === 'over15') key = 'Over 1.5';
         else if (pick.code === 'over25') key = 'Over 2.5';
         else if (pick.code === 'over35') key = 'Over 3.5';
+      } else if (pick.mercado === 'BTTS') {
+        key = 'BTTS Sí';
+      } else if (pick.mercado === 'Córners totales') {
+        if (pick.code === 'c_over75') key = 'Córners totales Over 7.5';
+        else if (pick.code === 'c_over85') key = 'Córners totales Over 8.5';
+        else if (pick.code === 'c_over95') key = 'Córners totales Over 9.5';
       } else if (pick.mercado === 'Córners') {
         key = pick.code === 'cl_over35' ? 'Córners local Over 3.5' : 'Córners visitante Over 3.5';
       }
@@ -343,15 +430,15 @@ function valorEV(probPct, casaOdds) {
   return (probPct / 100) * casaOdds;
 }
 
-function renderPicks(recs, stats) {
+function renderPicks(recs, stats, leagueKey) {
   if (!recs || recs.length === 0) return;
   picksSection.style.display = 'block';
+  const U = getUmbrales(leagueKey);
 
   const conPicks = recs.filter(r => r.picks.length > 0);
   const sinPicks = recs.filter(r => r.picks.length === 0);
 
-  // Resumen por mercado
-  const resumen = stats.mercados.map(m => {
+  const resumen = stats.mercados.filter(m => m.n > 0).map(m => {
     const c = colorPick(m.rate);
     const rateTxt = m.rate == null ? '—' : fmt(m.rate) + '%';
     return `<div class="compare-row">
@@ -367,15 +454,16 @@ function renderPicks(recs, stats) {
       <div class="compare-row compare-head"><span>Mercado</span><span>Picks emitidos</span><span>Acierto</span></div>
       ${resumen}
       <p style="margin:10px 0 0; font-size:0.78rem; color:var(--chalk-dim); line-height:1.5;">
-        <strong>Reglas aplicadas:</strong>
-        1X2 solo si favorito ≥ ${UMBRAL_1X2}% ·
-        Goles la línea más alta con ≥ ${UMBRAL_GOLES}% ·
-        Córners Over 3.5 de equipo con ≥ ${UMBRAL_CORNERS}%.
-        <br><strong>Partidos descartados (sin picks):</strong> ${sinPicks.length}.
+        <strong>Reglas para ${leagueKey}:</strong>
+        1X2 ≥ ${U.umbral1x2}% ·
+        Goles ≥ ${U.umbralGoles}% ·
+        BTTS ≥ ${U.umbralBtss}% ·
+        Córners ≥ ${U.umbralCorners}% ·
+        Córners visitante: ${U.cornersVisitante ? 'activado' : 'desactivado'}.
+        <br><strong>Partidos sin picks:</strong> ${sinPicks.length}.
       </p>
     </div>`;
 
-  // Ordenar por fecha descendente
   const ordenados = [...conPicks].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
 
   const cards = ordenados.map(r => {
@@ -385,8 +473,10 @@ function renderPicks(recs, stats) {
     const picksHTML = r.picks.map(pick => {
       const marca = pick.tieneReal ? (pick.hit ? '✅' : '❌') : '⏳';
       const realDetalle = pick.tieneReal
-        ? (pick.mercado === 'Córners'
-            ? `${pick.code === 'cl_over35' ? r.cornersLocal : r.cornersVisit} córners`
+        ? (pick.mercado === 'Córners' || pick.mercado === 'Córners totales'
+            ? (pick.mercado === 'Córners'
+                ? `${pick.code === 'cl_over35' ? r.cornersLocal : r.cornersVisit} córners`
+                : `${(r.cornersLocal ?? 0) + (r.cornersVisit ?? 0)} córners`)
             : `${r.totalGoles} goles`)
         : '';
       const ev = valorEV(pick.prob, pick.casaOdds);
@@ -430,6 +520,7 @@ runBtn.addEventListener('click', async () => {
 
   const leagueKey = historial.leagueKey;
   const partidos = historial.partidos;
+  const umbrales = getUmbrales(leagueKey);
 
   const calResult = await calibrarLiga(leagueKey, partidos);
   const calibracion = calResult.calibracion;
@@ -437,6 +528,7 @@ runBtn.addEventListener('click', async () => {
   renderCalibracion(calResult);
 
   log(`\n▶ Corriendo backtest con calibración ${calibracion ? 'ACTIVA' : 'por defecto'}...`);
+  log(`   Umbrales ${leagueKey}: 1X2 ≥${umbrales.umbral1x2}% · Goles ≥${umbrales.umbralGoles}% · BTTS ≥${umbrales.umbralBtss}% · Córners ≥${umbrales.umbralCorners}%`);
 
   const markets = {
     local: new MarketStats('Local gana'),
@@ -463,7 +555,7 @@ runBtn.addEventListener('click', async () => {
     over35: new MarketStats('Over 3.5 goles'), btts: new MarketStats('Ambos marcan'),
   };
 
-  const picksStats = new PicksStats();
+  const picksStats = new PicksStats(umbrales);
   const todasLasRecs = [];
 
   let evaluados = 0, saltados = 0;
@@ -486,8 +578,7 @@ runBtn.addEventListener('click', async () => {
       ? shrinkHaciaBase(pred.resultProbs, tasas, SHRINK_ALPHA)
       : pred.resultProbs;
 
-    // -------- Recomendación por partido --------
-    const rec = calcularRecomendacion(p, pred, resultProbsFinal);
+    const rec = calcularRecomendacion(p, pred, resultProbsFinal, leagueKey);
     todasLasRecs.push(rec);
     picksStats.add(rec);
 
@@ -571,7 +662,7 @@ runBtn.addEventListener('click', async () => {
   const modeloVsMercadoResumen = {};
   for (const [k, m] of Object.entries(modeloVsMercado)) modeloVsMercadoResumen[k] = m.summary();
 
-  renderPicks(todasLasRecs, picksStats.summary());
+  renderPicks(todasLasRecs, picksStats.summary(), leagueKey);
   renderResults(
     Object.entries(markets).map(([k, m]) => ({ key: k, ...m.summary() })),
     mercadoResumen,
