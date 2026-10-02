@@ -36,12 +36,15 @@ export function ajustarHomeAdvantage(homeAdvActual, tasas, predHomeRate) {
   return Math.max(1.0, Math.min(1.6, homeAdvActual * ajuste));
 }
 
-// Ajuste de rho con límites. El rango razonable de Dixon-Coles es [-0.25, +0.05];
-// valores fuera de eso generan distorsiones irreales en la distribución.
+// Ajuste de rho con límites ampliados.
+// El rango original era [-0.25, +0.05], pero ligas como Premier League
+// necesitan valores más negativos para capturar su tasa real de empates.
+// El rango ampliado es [-0.35, +0.05]. Es solo un techo — las ligas que no
+// lo necesiten no se ven afectadas.
 export function ajustarRho(rhoActual, tasas, predDrawRate) {
   const diff = tasas.drawRate - predDrawRate;
   const nuevo = rhoActual - diff * 0.8;
-  return Math.max(-0.25, Math.min(0.05, nuevo));
+  return Math.max(-0.35, Math.min(0.05, nuevo));
 }
 
 // Mezcla las probabilidades del modelo con las tasas base de la liga.
