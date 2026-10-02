@@ -3,7 +3,7 @@ import { simulateMatch } from './model.js';
 import { calcularTasasBase, ajustarHomeAdvantage, ajustarRho, shrinkHaciaBase } from './calibrate.js';
 
 // ============ CONFIGURACIÓN DE CALIBRACIÓN ============
-const CAL_ITERACIONES = 3;         // cuántas pasadas de ajuste
+const CAL_ITERACIONES = 7;         // cuántas pasadas de ajuste
 const CAL_MUESTRA = 60;            // cuántos partidos usar por iteración
 const CAL_MIN_PARTIDOS = 20;       // por debajo de esto, no calibrar
 const SHRINK_ALPHA = 0.15;         // 0 = sin shrinkage, 1 = solo tasas base
