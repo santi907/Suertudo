@@ -3,7 +3,7 @@ import { simulateMatch } from './model.js';
 import { calcularTasasBase, ajustarHomeAdvantage, ajustarRho, shrinkHaciaBase } from './calibrate.js';
 
 // ============ CONFIGURACIÓN DE CALIBRACIÓN ============
-const CAL_ITERACIONES = 7;         // cuántas pasadas de ajuste
+const CAL_ITERACIONES = 10;         // cuántas pasadas de ajuste
 const CAL_MUESTRA = 60;            // cuántos partidos usar por iteración
 const CAL_MIN_PARTIDOS = 20;       // por debajo de esto, no calibrar
 const SHRINK_ALPHA = 0.15;         // 0 = sin shrinkage, 1 = solo tasas base
@@ -415,10 +415,11 @@ function vsBaseColor(m) {
 
 function vsBaseNote(m, baseRate) {
   if (m == null) return '';
+  const br = baseRate * 100; // baseRate viene como fracción 0-1
   const signo = m >= 0 ? '+' : '';
-  if (m >= 10) return `${signo}${fmt(m)}% mejor que solo saber que esto pasa ${fmt(baseRate)}% de las veces`;
-  if (m >= 0) return `${signo}${fmt(m)}% mejor que adivinar el ${fmt(baseRate)}% de siempre`;
-  return `${fmt(m)}% peor que adivinar el ${fmt(baseRate)}% de siempre`;
+  if (m >= 10) return `${signo}${fmt(m)}% mejor que solo saber que esto pasa ${fmt(br)}% de las veces`;
+  if (m >= 0) return `${signo}${fmt(m)}% mejor que adivinar el ${fmt(br)}% de siempre`;
+  return `${fmt(m)}% peor que adivinar el ${fmt(br)}% de siempre`;
 }
 
 function bucketRows(buckets) {
